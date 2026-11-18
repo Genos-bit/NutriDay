@@ -1387,7 +1387,7 @@ function renderPreview(){
     const g = goalOf(key);
     if (!g) return "";
     const n = NUTRIENTS.find(x => x.key === key);
-    const val = totals ? totals[key] : null;
+    const val = totals ? totals[key === "calories" ? "cal" : key] : null;
     const pct = totals && g.value ? clamp((val / g.value) * 100, 0, 130) : 0;
     const good = totals && (g.mode === "limit" ? val <= g.value : val >= g.value * 0.85);
     const color = !totals ? "var(--olive)" : good ? "var(--olive)" : "var(--gold)";
