@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#fbf6ec" />
+<title>Nourish — plan your day around your goals</title>
+<meta name="description" content="Nourish is a warm, simple nutrition planner. Set your daily nutrient goals, note food preferences and allergies, and get a practical day of meals with portions, nutrition totals and easy swaps." />
+<style>
+/* ---------- design tokens ---------- */
+:root{
+  --cream:#fbf6ec;
+  --cream-2:#f5eddf;
+  --card:#fffdf8;
+  --ink:#2d2a22;
+  --ink-soft:#57503f;
+  --muted:#7b7361;
+  --line:#e8dfcd;
+  --line-strong:#d8ccb4;
+  --terra:#c0603a;
+  --terra-dark:#a04b2a;
+  --terra-soft:#f6e3d6;
+  --olive:#5f7a4f;
+  --olive-dark:#4a6340;
+  --olive-soft:#e7edda;
+  --gold:#b68a3a;
+  --berry:#8d4a5c;
+  --sky:#5c7d8c;
+  --ok:#5f7a4f;
+  --warn:#b68a3a;
+  --over:#b1503c;
+  --shadow-sm:0 1px 2px rgba(45,42,34,.05), 0 4px 14px -10px rgba(45,42,34,.35);
+  --shadow-md:0 1px 2px rgba(45,42,34,.05), 0 18px 40px -28px rgba(45,42,34,.45);
+  --radius:20px;
+  --radius-sm:12px;
+  --ease:cubic-bezier(.22,.68,.32,1);
+  --font-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+body{
+  margin:0; min-height:100vh; color:var(--ink); background:var(--cream);
+  font-family:var(--font-body); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  background-image:
+    radial-gradient(1100px 500px at 12% -10%, #fdf2e3 0%, transparent 60%),
+    radial-gradient(900px 480px at 100% 0%, #eef1e2 0%, transparent 55%);
+  background-attachment:fixed;
+}
+h1,h2,h3,h4{margin:0; line-height:1.15; letter-spacing:-.015em; font-family:var(--font-display); font-weight:600}
+p{margin:0}
+button,input,select,textarea{font:inherit; color:inherit}
+a{color:var(--olive-dark)}
+img,svg{display:block; max-width:100%}
+::selection{background:var(--terra-soft); color:var(--terra-dark)}
+:focus-visible{outline:2.5px solid var(--olive); outline-offset:3px; border-radius:6px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip-link{
+  position:absolute; left:12px; top:-60px; z-index:100; background:var(--ink); color:var(--cream);
+  padding:10px 16px; border-radius:10px; text-decoration:none; transition:top .2s var(--ease);
+}
+.skip-link:focus{top:12px}
+
+/* ---------- ambient decoration ---------- */
+.ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
+.blob{position:absolute; border-radius:50%; filter:blur(46px); opacity:.5; animation:drift 22s var(--ease) infinite alternate}
+.blob.b1{width:340px;height:340px;background:#f7ddc6;top:-90px;left:-60px}
+.blob.b2{width:300px;height:300px;background:#e6ecd6;top:34%;right:-110px;animation-delay:-7s}
+.blob.b3{width:260px;height:260px;background:#f6e7d3;bottom:-90px;left:28%;animation-delay:-13s}
+@keyframes drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(18px,-22px,0) scale(1.06)}
+  100%{transform:translate3d(-14px,16px,0) scale(.97)}
+}
+
+/* ---------- app frame ---------- */
+.app{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column}
+.topbar{
+  position:sticky; top:0; z-index:30;
+  background:rgba(251,246,236,.82);
+  -webkit-backdrop-filter:blur(14px) saturate(1.1); backdrop-filter:blur(14px) saturate(1.1);
+  border-bottom:1px solid rgba(232,223,205,.9);
+}
+.topbar-inner{max-width:1160px; margin:0 auto; padding:12px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:11px; text-decoration:none; color:var(--ink); border-radius:12px}
+.brand-mark{
+  width:40px; height:40px; border-radius:13px; display:grid; place-items:center;
+  background:linear-gradient(145deg,#6c8759,#4d6540); color:#f7f3e6;
+  box-shadow:0 6px 16px -10px rgba(74,99,64,.9);
+  transition:transform .45s var(--ease);
+}
+.brand:hover .brand-mark{transform:rotate(-6deg) scale(1.05)}
+.brand-mark svg{width:22px;height:22px}
+.brand-text{display:grid; line-height:1.15}
+.brand-text strong{font-family:var(--font-display); font-size:1.18rem; font-weight:600; letter-spacing:-.01em}
+.brand-text span{font-size:.72rem; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; font-weight:600}
+.nav{margin-left:auto; display:flex; gap:4px; padding:4px; background:rgba(245,237,223,.75); border:1px solid var(--line); border-radius:999px}
+.nav-btn{
+  border:0; background:transparent; color:var(--ink-soft); cursor:pointer;
+  padding:8px 16px; border-radius:999px; font-size:.88rem; font-weight:600; white-space:nowrap;
+  transition:background .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
+}
+.nav-btn:hover{background:rgba(255,253,248,.9); color:var(--ink)}
+.nav-btn[aria-current="page"]{background:var(--ink); color:var(--cream); box-shadow:var(--shadow-sm)}
+.nav-btn:active{transform:scale(.97)}
+
+.shell{flex:1; width:100%; max-width:1160px; margin:0 auto; padding:34px 22px 72px}
+.screen{display:none}
+.screen.is-active{display:block}
+.screen.is-leaving{display:none}
+@media (prefers-reduced-motion:no-preference){
+  .screen.is-entering{animation:screenIn .5s var(--ease) both}
+  @keyframes screenIn{
+    from{opacity:0; transform:translateY(14px)}
+    to{opacity:1; transform:none}
+  }
+}
+
+/* ---------- headings + cards ---------- */
+.page-head{margin-bottom:26px; max-width:68ch}
+.kicker{
+  display:inline-flex; align-items:center; gap:8px; font-size:.72rem; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--olive-dark); margin-bottom:10px;
+}
+.kicker::before{content:""; width:22px; height:2px; border-radius:2px; background:var(--terra); opacity:.7}
+.page-head h1{font-size:clamp(1.9rem,4.2vw,2.75rem); color:var(--ink)}
+.page-head .lede{margin-top:10px; color:var(--ink-soft); font-size:1.02rem; max-width:62ch}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm); padding:24px;
+}
+.card + .card{margin-top:18px}
+.card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px}
+.card-head h2{font-size:1.28rem}
+.card-head p{color:var(--muted); font-size:.88rem; margin-top:3px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
+  padding:11px 18px; border-radius:999px; font-size:.9rem; font-weight:650; cursor:pointer;
+  transition:background .22s var(--ease), border-color .22s var(--ease), transform .18s var(--ease), box-shadow .22s var(--ease), color .22s var(--ease);
+}
+.btn:hover{background:var(--cream-2); border-color:#c9bb9f; transform:translateY(-1px); box-shadow:var(--shadow-sm)}
+.btn:active{transform:translateY(0) scale(.985)}
+.btn svg{width:17px; height:17px}
+.btn-primary{
+  background:linear-gradient(145deg,#cb6a42,var(--terra) 55%,#ab5330);
+  border-color:transparent; color:#fff8f1;
+  box-shadow:0 10px 22px -14px rgba(160,75,42,.95);
+}
+.btn-primary:hover{background:linear-gradient(145deg,#d2764d,var(--terra-dark)); color:#fff; box-shadow:0 14px 26px -14px rgba(160,75,42,.85)}
+.btn-ghost{background:transparent; border-color:transparent; color:var(--ink-soft)}
+.btn-ghost:hover{background:rgba(232,223,205,.5); border-color:transparent}
+.btn-sm{padding:6px 12px; font-size:.8rem; gap:5px}
+.btn-sm svg{width:14px;height:14px}
+.btn[disabled]{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none}
+.icon-btn{
+  width:34px; height:34px; display:grid; place-items:center; border-radius:10px;
+  border:1px solid var(--line-strong); background:var(--card); cursor:pointer; color:var(--ink-soft);
+  transition:background .2s, border-color .2s, transform .15s;
+}
+.icon-btn:hover{background:var(--cream-2); border-color:#c9bb9f}
+.icon-btn:active{transform:scale(.94)}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn[disabled]{opacity:.35; cursor:not-allowed}
+
+/* ---------- forms ---------- */
+.field{display:grid; gap:6px}
+.field label,.field-label{font-size:.8rem; font-weight:650; color:var(--ink-soft); letter-spacing:.01em}
+.field .hint{font-size:.76rem; color:var(--muted)}
+input[type=text],input[type=number],input[type=search]{width:100%; background:#fffefb; border:1.5px solid var(--line-strong); border-radius:12px; padding:10px 13px; font-size:.95rem; transition:border-color .2s, box-shadow .2s, background .2s}
+input::placeholder{color:#a89e8a}
+input:focus{outline:none; border-color:var(--olive); box-shadow:0 0 0 4px rgba(95,122,79,.14); background:#fff}
+input[type=number]{font-variant-numeric:tabular-nums}
+.num-wrap{position:relative; display:flex; align-items:center}
+.num-wrap input{padding-right:52px}
+.num-wrap .unit{position:absolute; right:12px; font-size:.74rem; font-weight:700; color:var(--muted); letter-spacing:.04em; pointer-events:none}
+.toggle-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px dashed var(--line)}
+.toggle-row:last-child{border-bottom:0}
+.toggle-row .t-label{font-size:.9rem; font-weight:600}
+.toggle-row .t-sub{font-size:.78rem; color:var(--muted)}
+
+/* switch */
+.switch{position:relative; display:inline-flex; flex:0 0 auto; width:46px; height:27px}
+.switch input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer}
+.switch .track{
+  position:absolute; inset:0; border-radius:999px; background:#e2d8c4; border:1px solid var(--line-strong);
+  transition:background .28s var(--ease), border-color .28s var(--ease); pointer-events:none;
+}
+.switch .thumb{
+  position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(45,42,34,.28); transition:transform .32s var(--ease); pointer-events:none;
+}
+.switch input:checked ~ .track{background:var(--olive); border-color:var(--olive)}
+.switch input:checked ~ .thumb{transform:translateX(19px)}
+.switch input:focus-visible ~ .track{outline:2.5px solid var(--olive); outline-offset:3px}
+
+/* chips + pills */
+.chip-set{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  position:relative; display:inline-flex; align-items:center; gap:7px;
+  border:1.5px solid var(--line-strong); background:var(--card); color:var(--ink-soft);
+  padding:7px 14px; border-radius:999px; font-size:.83rem; font-weight:600; cursor:pointer;
+  transition:background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease), transform .18s var(--ease);
+}
+.chip:hover{border-color:#c3b394; color:var(--ink); transform:translateY(-1px)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--cream)}
+.chip[aria-pressed="true"] .chip-dot{background:var(--terra-soft)}
+.chip-dot{width:7px; height:7px; border-radius:50%; background:currentColor; opacity:.55}
+.chip:active{transform:scale(.97)}
+.tag{
+  display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+  font-size:.71rem; font-weight:700; letter-spacing:.03em; background:var(--cream-2); color:var(--ink-soft);
+  border:1px solid var(--line);
+}
+.tag.green{background:var(--olive-soft); color:var(--olive-dark); border-color:#d3dec2}
+.tag.terra{background:var(--terra-soft); color:var(--terra-dark); border-color:#efd2c1}
+.tag.gold{background:#f7eed8; color:#8a6620; border-color:#ecdcba}
+
+/* saved chip row */
+.avoid-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+.avoid-pill{
+  display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 13px; border-radius:999px;
+  background:var(--terra-soft); border:1px solid #efd2c1; color:var(--terra-dark);
+  font-size:.82rem; font-weight:650; animation:popIn .28s var(--ease) both;
+}
+.avoid-pill button{
+  width:20px; height:20px; border-radius:50%; border:0; background:rgba(160,75,42,.12);
+  color:inherit; cursor:pointer; display:grid; place-items:center; transition:background .2s, transform .15s;
+}
+.avoid-pill button:hover{background:rgba(160,75,42,.25)}
+.avoid-pill button:active{transform:scale(.9)}
+.avoid-pill svg{width:11px; height:11px}
+@keyframes popIn{from{opacity:0; transform:scale(.85)} to{opacity:1; transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important}
+}
+
+/* ---------- goals layout ---------- */
+.setup-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:20px; align-items:start}
+@media (max-width:900px){.setup-grid{grid-template-columns:1fr}}
+.nutrient-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 16px}
+@media (max-width:560px){.nutrient-grid{grid-template-columns:1fr}}
+.nutrient{display:grid; gap:6px}
+.nutrient .n-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.nutrient .n-name{font-size:.86rem; font-weight:650; display:flex; align-items:center; gap:7px}
+.nutrient .dot{width:8px; height:8px; border-radius:50%; background:var(--olive)}
+.nutrient .n-mode{font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted)}
+.nutrient input.changed{animation:fieldPulse .6s var(--ease)}
+@keyframes fieldPulse{
+  0%{box-shadow:0 0 0 0 rgba(192,96,58,.35); border-color:var(--terra)}
+  100%{box-shadow:0 0 0 9px rgba(192,96,58,0); border-color:var(--line-strong)}
+}
+.subhead{display:flex; align-items:center; gap:10px; margin:26px 0 12px; font-size:.74rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.subhead::after{content:""; flex:1; height:1px; background:var(--line)}
+
+/* live preview panel */
+.preview-card{position:sticky; top:88px; display:grid; gap:16px; overflow:hidden}
+@media (max-width:900px){.preview-card{position:static}}
+.preview-card .p-glow{position:absolute; inset:-40% -30% auto auto; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,#f8e3cf,transparent 70%); pointer-events:none}
+.preview-title{font-size:1.02rem; font-weight:700; position:relative; display:flex; align-items:center; gap:8px}
+.preview-title svg{width:17px;height:17px;color:var(--terra)}
+.preview-stat{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line)}
+.preview-stat:last-of-type{border-bottom:0}
+.preview-stat .ps-label{font-size:.82rem; color:var(--ink-soft); font-weight:600}
+.preview-stat .ps-value{font-size:1.02rem; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.mini-bar{height:6px; border-radius:999px; background:var(--cream-2); overflow:hidden; margin-top:5px}
+.mini-bar > i{display:block; height:100%; width:0; border-radius:999px; background:var(--olive); transition:width .7s var(--ease), background .3s}
+.preview-note{display:flex; gap:8px; align-items:flex-start; padding:11px 12px; background:var(--cream-2); border-radius:12px; font-size:.78rem; color:var(--ink-soft); line-height:1.5}
+.preview-note svg{width:15px;height:15px;color:var(--olive-dark); flex:0 0 auto; margin-top:2px}
+.avoid-input-row{display:flex; gap:8px; margin-top:10px}
+.avoid-input-row input{flex:1}
+.empty-hint{font-size:.8rem; color:var(--muted); font-style:italic}
+
+/* ---------- plan summary ---------- */
+.plan-top{display:grid; grid-template-columns:minmax(280px,.95fr) minmax(0,1.6fr); gap:18px; margin-bottom:20px; align-items:stretch}
+@media (max-width:900px){.plan-top{grid-template-columns:1fr}}
+.cal-card{display:flex; align-items:center; gap:22px; padding:22px}
+.ring-wrap{position:relative; width:132px; height:132px; flex:0 0 auto}
+.ring-wrap svg{transform:rotate(-90deg); width:132px; height:132px}
+.ring-bg{fill:none; stroke:#efe6d5; stroke-width:11}
+.ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:11; stroke-linecap:round; stroke-dasharray:339.3; stroke-dashoffset:339.3; transition:stroke-dashoffset 1s var(--ease), stroke .4s}
+.ring-center{position:absolute; inset:0; display:grid; place-content:center; text-align:center; line-height:1.1}
+.ring-center strong{font-size:1.6rem; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.ring-center span{font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-top:4px}
+.cal-meta{display:grid; gap:4px; min-width:0}
+.cal-meta .cm-title{font-size:.74rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+.cal-meta .cm-value{font-size:1.55rem; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.cal-meta .cm-sub{font-size:.84rem; color:var(--ink-soft)}
+.cal-meta .cm-sub b{color:var(--ink)}
+.macro-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 18px; padding:22px}
+@media (max-width:520px){.macro-grid{grid-template-columns:1fr}}
+.macro{display:grid; gap:5px}
+.macro .m-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:.82rem}
+.macro .m-name{font-weight:650; color:var(--ink-soft); display:flex; align-items:center; gap:6px}
+.macro .m-val{font-variant-numeric:tabular-nums; font-weight:700; font-size:.86rem}
+.macro .m-val small{font-weight:600; color:var(--muted); font-size:.78rem}
+.macro .m-track{height:7px; border-radius:999px; background:var(--cream-2); overflow:hidden}
+.macro .m-fill{height:100%; width:0; border-radius:999px; transition:width .8s var(--ease), background .3s}
+.macro .m-fill.good{background:var(--olive)}
+.macro .m-fill.near{background:var(--gold)}
+.macro .m-fill.over{background:var(--over)}
+.macro .m-fill.under{background:#c9bb9f}
+
+/* ---------- plan table ---------- */
+.plan-card{padding:0; overflow:hidden}
+.plan-card-head{padding:22px 24px 0}
+.table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
+.plan-table{width:100%; border-collapse:collapse; min-width:760px}
+.plan-table caption{text-align:left; padding:0 0 12px; color:var(--muted); font-size:.84rem}
+.plan-table thead th{
+  text-align:left; font-size:.7rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+  font-weight:700; padding:12px 12px; border-bottom:1px solid var(--line); background:var(--cream);
+  position:sticky; top:0; z-index:1;
+}
+.plan-table thead th:first-child{padding-left:24px}
+.plan-table thead th:last-child{padding-right:24px; text-align:right}
+.plan-table thead th.num{text-align:right}
+.plan-table tbody tr{transition:background .25s}
+.plan-table tbody tr:hover{background:#fdfaf2}
+.plan-table td{padding:15px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:.9rem}
+.plan-table td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+.plan-table td:first-child{padding-left:24px}
+.plan-table td:last-child{padding-right:24px; text-align:right}
+.meal-slot{display:grid; gap:2px; min-width:88px}
+.meal-slot .slot-name{font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--terra-dark)}
+.meal-slot .slot-time{font-size:.75rem; color:var(--muted)}
+.meal-name{font-weight:650; font-size:.94rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.meal-name .emoji{font-size:1.05rem}
+.meal-desc{font-size:.8rem; color:var(--muted); margin-top:3px; max-width:42ch}
+.meal-tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
+.portion-cell{display:grid; gap:6px; min-width:104px}
+.portion-label{font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.stepper{display:inline-flex; align-items:center; gap:2px; border:1px solid var(--line-strong); border-radius:999px; background:var(--card); padding:2px}
+.stepper button{
+  width:26px; height:26px; border:0; border-radius:50%; background:transparent; cursor:pointer;
+  display:grid; place-items:center; color:var(--ink-soft); font-size:1rem; line-height:1;
+  transition:background .18s, transform .15s;
+}
+.stepper button:hover{background:var(--cream-2); color:var(--ink)}
+.stepper button:active{transform:scale(.9)}
+.stepper button[disabled]{opacity:.3; cursor:not-allowed}
+.stepper .step-val{min-width:40px; text-align:center; font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums}
+.row-actions{display:inline-flex; gap:6px; justify-content:flex-end}
+.detail-btn{border:0; background:transparent; color:var(--ink-soft); cursor:pointer; padding:7px 9px; border-radius:9px; display:inline-flex; align-items:center; gap:5px; font-size:.79rem; font-weight:650; transition:background .2s,color .2s}
+.detail-btn:hover{background:var(--cream-2); color:var(--ink)}
+.detail-btn svg{width:14px;height:14px}
+.swap-btn{white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){
+  .plan-table tbody tr.row-in{animation:rowIn .55s var(--ease) both}
+  .plan-table tbody tr.row-swap{animation:rowSwap .5s var(--ease)}
+  @keyframes rowIn{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+  @keyframes rowSwap{
+    0%{opacity:1; transform:none}
+    35%{opacity:.2; transform:translateX(-10px)}
+    62%{opacity:.4; transform:translateX(8px)}
+    100%{opacity:1; transform:none}
+  }
+}
+.plan-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:18px 24px; background:var(--cream); border-top:1px solid var(--line)}
+.plan-actions .spacer{flex:1}
+.save-state{font-size:.79rem; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
+.save-state .pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);box-shadow:0 0 0 0 rgba(95,122,79,.55); animation:dotPulse 2.4s infinite}
+@keyframes dotPulse{0%{box-shadow:0 0 0 0 rgba(95,122,79,.5)}70%{box-shadow:0 0 0 7px rgba(95,122,79,0)}100%{box-shadow:0 0 0 0 rgba(95,122,79,0)}}
+
+/* limit meters */
+.limit-row{display:flex; justify-content:space-between; gap:10px; font-size:.84rem; padding:8px 0}
+.limit-row .l-name{font-weight:650; color:var(--ink-soft)}
+.limit-row .l-val{font-variant-numeric:tabular-nums; font-weight:700}
+.limit-track{position:relative; height:8px; border-radius:999px; background:var(--cream-2); overflow:hidden}
+.limit-track .limit-fill{position:absolute; inset:0 auto 0 0; border-radius:999px; background:var(--olive); width:0; transition:width .8s var(--ease), background .3s}
+.limit-track .limit-mark{position:absolute; top:-2px; bottom:-2px; width:2px; background:rgba(45,42,34,.35); left:100%; transform:translateX(-2px)}
+.limit-caption{font-size:.75rem; color:var(--muted); margin-top:4px}
+
+/* ---------- disclaimer + footer ---------- */
+.disclaimer{
+  display:flex; gap:12px; align-items:flex-start; margin-top:24px; padding:16px 18px;
+  background:rgba(255,253,248,.75); border:1px dashed var(--line-strong); border-radius:var(--radius-sm);
+  font-size:.82rem; color:var(--ink-soft); line-height:1.55;
+}
+.disclaimer svg{width:18px; height:18px; flex:0 0 auto; color:var(--gold); margin-top:1px}
+.disclaimer b{color:var(--ink)}
+.site-footer{max-width:1160px; margin:0 auto; padding:0 22px 34px; color:var(--muted); font-size:.78rem; display:flex; gap:14px; flex-wrap:wrap; justify-content:space-between; border-top:1px solid var(--line); padding-top:18px}
+.site-footer a{color:var(--ink-soft)}
+
+/* ---------- dialog / drawer ---------- */
+dialog.detail-dialog{
+  border:0; padding:0; background:transparent; max-width:min(560px,calc(100vw - 28px)); width:100%;
+  max-height:min(88vh,860px); margin:auto; overflow:visible; color:var(--ink);
+}
+dialog.detail-dialog::backdrop{background:rgba(45,42,34,.4); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px)}
+dialog.detail-dialog[open]{animation:dialogIn .34s var(--ease)}
+dialog.detail-dialog::backdrop{animation:fadeIn .3s var(--ease)}
+@keyframes dialogIn{from{opacity:0; transform:translateY(18px) scale(.97)} to{opacity:1; transform:none}}
+@keyframes fadeIn{from{opacity:0} to{opacity:1}}
+.dlg-inner{background:var(--card); border-radius:24px; box-shadow:0 30px 70px -30px rgba(45,42,34,.6); overflow:hidden; display:flex; flex-direction:column; max-height:min(88vh,860px)}
+.dlg-head{padding:22px 24px 16px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:14px}
+.dlg-head .emoji-lg{font-size:1.9rem; line-height:1}
+.dlg-head h2{font-size:1.3rem}
+.dlg-head .dlg-sub{font-size:.83rem; color:var(--muted); margin-top:2px}
+.dlg-close{margin-left:auto; flex:0 0 auto}
+.dlg-body{padding:20px 24px; overflow:auto; display:grid; gap:20px}
+.dlg-section h3{font-family:var(--font-body); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; font-weight:700}
+.ing-list{display:grid; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.ing-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; font-size:.87rem; border-bottom:1px solid var(--line); background:#fffefb}
+.ing-row:last-child{border-bottom:0}
+.ing-row:nth-child(even){background:#fdfaf3}
+.ing-row .ing-name{font-weight:600}
+.ing-row .ing-amt{color:var(--muted); font-variant-numeric:tabular-nums; font-size:.83rem}
+.nutri-mini{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
+.nutri-mini .nm{background:var(--cream-2); border-radius:12px; padding:10px 12px; text-align:center}
+.nutri-mini .nm b{display:block; font-size:1rem; font-variant-numeric:tabular-nums}
+.nutri-mini .nm span{font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:700}
+.portion-row{display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--cream); border:1px solid var(--line); padding:12px 14px; border-radius:14px; flex-wrap:wrap}
+.portion-row .pr-label{font-size:.85rem; font-weight:650}
+.portion-row .pr-sub{font-size:.76rem; color:var(--muted)}
+.dlg-foot{padding:16px 24px 20px; border-top:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; background:var(--cream)}
+.dlg-foot .spacer{flex:1}
+
+/* ---------- toast ---------- */
+.toast-stack{position:fixed; z-index:80; left:50%; bottom:24px; transform:translateX(-50%); display:grid; gap:8px; width:max-content; max-width:calc(100vw - 32px)}
+.toast{
+  display:flex; align-items:center; gap:10px; background:rgba(45,42,34,.96); color:#f8f2e5;
+  padding:12px 18px; border-radius:999px; font-size:.86rem; font-weight:550; box-shadow:0 18px 40px -18px rgba(0,0,0,.6);
+  animation:toastIn .38s var(--ease) both;
+}
+.toast svg{width:16px;height:16px;color:#cfe0b9;flex:0 0 auto}
+.toast.leaving{animation:toastOut .32s var(--ease) both}
+@keyframes toastIn{from{opacity:0; transform:translateY(16px) scale(.96)} to{opacity:1; transform:none}}
+@keyframes toastOut{to{opacity:0; transform:translateY(10px) scale(.97)}}
+
+@media (max-width:720px){
+  .shell{padding:24px 16px 56px}  .topbar-inner{padding:10px 16px}
+  .nav{width:100%; margin-left:0; justify-content:space-between}
+  .nav-btn{flex:1; padding:9px 8px; font-size:.84rem}
+  .card{padding:20px 18px}
+  .cal-card{flex-direction:column; align-items:flex-start; gap:14px}
+  .plan-table{min-width:0}
+  .plan-table thead{display:none}
+  .plan-table, .plan-table tbody, .plan-table tr, .plan-table td{display:block; width:100%}
+  .plan-table tbody tr{
+    border-bottom:1px solid var(--line); padding:16px 18px; display:grid;
+    grid-template-columns:1fr 1fr; gap:10px 14px;
+  }
+  .plan-table tbody tr:hover{background:transparent}
+  .plan-table td{border:0; padding:0; font-size:.88rem}
+  .plan-table td:first-child, .plan-table td:last-child{padding:0}
+  .plan-table td.cell-meal{grid-column:1 / -1}
+  .plan-table td.cell-slot{grid-column:1 / -1; padding-bottom:2px}
+  .plan-table td.num{text-align:left; display:flex; justify-content:space-between; gap:8px}
+  .plan-table td.num::before{content:attr(data-label); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  .plan-table td.cell-actions{grid-column:1 / -1; text-align:left; margin-top:2px}
+  .plan-table tfoot tr{display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; padding:16px 18px; background:var(--cream)}
+  .plan-table tfoot th{grid-column:1 / -1; padding:0 !important; font-size:.72rem !important}
+  .row-actions{justify-content:flex-start; flex-wrap:wrap}
+  .meal-slot{display:flex; align-items:baseline; gap:8px}
+  .portion-cell{grid-column:1 / -1}
+  .dlg-body{padding:16px 18px}
+  .dlg-head,.dlg-foot{padding-left:18px; padding-right:18px}
+  .nutri-mini{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stepper button{width:34px; height:34px; font-size:1.15rem}
+  .stepper .step-val{min-width:46px; font-size:.82rem}
+  .detail-btn{padding:8px 10px; min-height:36px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff; color:#000; font-size:11pt}
+  .ambient,.topbar,.site-footer,.toast-stack,.plan-actions .btn,.plan-actions .save-state,
+  .screen#screen-setup,.skip-link,dialog{display:none !important}
+  .shell{padding:0; max-width:none}
+  .page-head{margin-bottom:12pt}
+  .page-head .btn,.page-head .lede{display:none}
+  .card{box-shadow:none; border:1px solid #ddd; break-inside:avoid; margin-bottom:10pt}
+  .plan-card{padding:0}
+  .plan-table{min-width:0; font-size:9.5pt}
+  .plan-table thead th{background:#f4f4f4; color:#000}
+  .plan-table td,.plan-table thead th{padding:6pt 5pt}
+  .stepper,.row-actions,.chip-set,.tag.terra{display:none}
+  .ring-fg{stroke:#555 !important}
+  .mini-bar,.m-fill,.limit-fill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  a[href]::after{content:""}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="ambient" aria-hidden="true">
+  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#" data-go="setup">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4.5-2-7-5.6-7-9.5A6.5 6.5 0 0 1 12 5a6.5 6.5 0 0 1 7 6.5c0 3.9-2.5 7.5-7 9.5Z"/><path d="M12 21V9"/><path d="M12 13c1.6-.3 3-1.4 3.6-2.9"/></svg>
+        </span>
+        <span class="brand-text"><strong>Nourish</strong><span>Daily nutrition planner</span></span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <button class="nav-btn" type="button" data-go="setup" aria-current="page">Your goals</button>
+        <button class="nav-btn" type="button" data-go="plan">Today’s plan</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell" id="main">
+    <!-- ============ SETUP ============ -->
+    <section class="screen is-active" id="screen-setup" aria-labelledby="setup-title">
+      <div class="page-head">
+        <p class="kicker">Step 1 · Set your direction</p>
+        <h1 id="setup-title">What does a good day look like for you?</h1>
+        <p class="lede">Set the nutrients you want to reach or keep in check, then tell us what you like and what to avoid. We’ll shape a simple, realistic day of eating around it.</p>
+      </div>
+
+      <div class="setup-grid">
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Daily nutrient goals</h2>
+                <p>Reach targets are minimums to aim for. Limits are ceilings to stay under.</p>
+              </div>
+              <button class="btn btn-sm btn-ghost" type="button" id="resetGoals">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                Reset
+              </button>
+            </div>
+
+            <div class="nutrient-grid" id="goalFields"></div>
+            <p class="hint" style="margin-top:14px; font-size:.78rem; color:var(--muted)">Not sure? Leave the defaults — they follow common general guidance for adults.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>How you like to eat</h2>
+                <p>Pick any that apply. We’ll only build meals that fit.</p>
+              </div>
+            </div>
+            <div class="chip-set" id="dietChips" role="group" aria-label="Dietary preferences"></div>
+
+            <div class="subhead" style="margin-top:22px">Foods to avoid</div>
+            <div class="field">
+              <label for="avoidInput">Allergies or foods you’d rather skip</label>
+              <div class="avoid-input-row">
+                <input type="text" id="avoidInput" placeholder="e.g. peanuts, shellfish, mushrooms" autocomplete="off" aria-describedby="avoidHint" />
+                <button class="btn btn-sm" type="button" id="addAvoid">Add</button>
+              </div>
+              <span class="hint" id="avoidHint">Press Enter to add. We’ll keep these out of every suggestion.</span>
+            </div>
+            <div class="avoid-list" id="avoidList" aria-live="polite"></div>
+
+            <div class="subhead" style="margin-top:22px">Meals in your day</div>
+            <div id="slotToggles"></div>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px">
+            <button class="btn btn-primary" type="button" id="buildPlan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+              Build my day
+            </button>
+            <button class="btn" type="button" data-go="plan" id="peekPlan">See today’s plan</button>
+          </div>
+        </div>
+
+        <aside class="card preview-card" aria-labelledby="previewTitle">
+          <span class="p-glow" aria-hidden="true"></span>
+          <div class="preview-title" id="previewTitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2"/><path d="M12 19v2"/><path d="M4.9 7.1 6.3 8.5"/><path d="M17.7 15.5l1.4 1.4"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M4.9 16.9l1.4-1.4"/><path d="M17.7 8.5l1.4-1.4"/><circle cx="12" cy="12" r="3.4"/></svg>
+            Your day at a glance
+          </div>
+          <div id="previewStats"></div>
+          <div class="preview-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg>
+            <span id="previewNote">Plans are built from whole-food building blocks and scaled to your calorie target.</span>
+          </div>
+        </aside>
+      </div>
+
+      <div class="disclaimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 9v5"/><path d="M12 17.2v.1"/></svg>
+        <p><b>Estimates only.</b> Nutrition values are approximate and vary by brand, variety and preparation. Nourish is for general meal planning and is not medical advice. If you have a medical condition, are pregnant, or follow a prescribed diet, talk with a qualified health professional or registered dietitian.</p>
+      </div>
+    </section>
+
+    <!-- ============ PLAN ============ -->
+    <section class="screen" id="screen-plan" aria-labelledby="plan-title" hidden>
+      <div class="page-head" style="display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; max-width:none">
+        <div>
+          <p class="kicker">Step 2 · Your table</p>
+          <h1 id="plan-title">Today, laid out simply</h1>
+          <p class="lede" id="planLede">A balanced day built around your goals. Swap anything you don’t feel like, or nudge a portion.</p>
+          <p id="planDate" style="margin-top:8px; font-size:.84rem; color:var(--muted); font-weight:600; letter-spacing:.02em"></p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-sm" type="button" data-go="setup">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10"/><path d="M18 6h2"/><path d="M4 12h4"/><path d="M12 12h8"/><path d="M4 18h12"/><path d="M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            Edit goals
+          </button>
+          <button class="btn btn-sm btn-primary" type="button" id="shufflePlan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+            New day
+          </button>
+        </div>
+      </div>
+
+      <div class="plan-top">
+        <div class="card cal-card">
+          <div class="ring-wrap" aria-hidden="true">
+            <svg viewBox="0 0 132 132">
+              <defs>
+                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#cb6a42"/><stop offset="100%" stop-color="#b68a3a"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="66" cy="66" r="54"/>
+              <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="54"/>
+            </svg>
+            <div class="ring-center"><strong id="ringPct">0%</strong><span>of calories</span></div>
+          </div>
+          <div class="cal-meta">
+            <span class="cm-title">Calories today</span>
+            <span class="cm-value" id="calTotal">0</span>
+            <span class="cm-sub" id="calSub">of 0 kcal goal</span>
+          </div>
+          <p class="sr-only" id="planAnnounce" aria-live="polite"></p>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="macro-grid" id="macroGrid"></div>
+        </div>
+      </div>
+
+      <div class="card plan-card">
+        <div class="plan-card-head">
+          <div class="card-head" style="margin-bottom:14px">
+            <div>
+              <h2>Your meal plan</h2>
+              <p id="planSummary">Meals, portions and estimated nutrition.</p>
+            </div>
+            <div class="chip-set" style="align-items:center">
+              <span class="tag green" id="dietTag">Balanced</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="plan-table" id="planTable">
+            <caption class="sr-only">Daily meal plan with suggested meals, portions, ingredients and estimated nutrition. Daily totals appear in the final row.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Meal</th>
+                <th scope="col">Suggestion</th>
+                <th scope="col">Portion</th>
+                <th scope="col" class="num">Cal</th>
+                <th scope="col" class="num">Protein</th>
+                <th scope="col" class="num">Carbs</th>
+                <th scope="col" class="num">Fat</th>
+                <th scope="col">Adjust</th>
+              </tr>
+            </thead>
+            <tbody id="planBody"></tbody>
+            <tfoot id="planFoot"></tfoot>
+          </table>
+        </div>
+
+        <div class="plan-actions">
+          <span class="save-state" id="saveState"><span class="pulse-dot" aria-hidden="true"></span> Saved on this device</span>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" type="button" id="resetPlan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+            Reset portions
+          </button>
+          <button class="btn btn-sm" type="button" id="printPlan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>
+            Print
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-head">
+          <div>
+            <h2>Limits to watch</h2>
+            <p>How today’s plan sits against the ceilings you set.</p>
+          </div>
+        </div>
+        <div id="limitMeters"></div>
+      </div>
+
+      <div class="disclaimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 9v5"/><path d="M12 17.2v.1"/></svg>
+        <p><b>Estimates only.</b> Nutrition values are approximate and vary by brand, variety and preparation. Nourish is for general meal planning and is not medical advice. If you have a medical condition, are pregnant, or follow a prescribed diet, talk with a qualified health professional or registered dietitian.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Nourish · a calm daily nutrition planner</span>
+    <span>Estimates are approximate · not medical advice</span>
+  </footer>
+</div>
+
+<dialog class="detail-dialog" id="detailDialog" aria-labelledby="dlgTitle"></dialog>
+<div class="toast-stack" id="toastStack" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+
+/* ============================================================
+   Nutrition planner — data
+   Ingredient entries: [name, quantity, kcal, protein, carbs, fat, fiber, sugar, sodium]
+   ============================================================ */
+
+const SLOTS = [
+  { id:"breakfast", label:"Breakfast", time:"7:30 am", share:0.25, defaultOn:true },
+  { id:"snack1",    label:"Morning snack", time:"10:30 am", share:0.07, defaultOn:true },
+  { id:"lunch",     label:"Lunch", time:"12:30 pm", share:0.30, defaultOn:true },
+  { id:"snack2",    label:"Afternoon snack", time:"4:00 pm", share:0.08, defaultOn:true },
+  { id:"dinner",    label:"Dinner", time:"7:00 pm", share:0.30, defaultOn:true },
+];
+
+const NUTRIENTS = [
+  { key:"calories", label:"Calories", unit:"kcal", step:50,   def:2000, mode:"reach" },
+  { key:"protein",  label:"Protein",  unit:"g",    step:5,    def:100,  mode:"reach" },
+  { key:"carbs",    label:"Carbohydrates", unit:"g", step:10, def:250,  mode:"reach" },
+  { key:"fat",      label:"Fat",      unit:"g",    step:5,    def:65,   mode:"reach" },
+  { key:"fiber",    label:"Fiber",    unit:"g",    step:2,    def:30,   mode:"reach" },
+  { key:"sugar",    label:"Sugar",    unit:"g",    step:5,    def:50,   mode:"limit" },
+  { key:"sodium",   label:"Sodium",   unit:"mg",   step:100,  def:2300, mode:"limit" },
+];
+
+const DIETS = [
+  { id:"vegetarian", label:"Vegetarian" },
+  { id:"vegan",      label:"Plant-based" },
+  { id:"pescatarian",label:"Pescatarian" },
+  { id:"gluten-free",label:"Gluten-free" },
+  { id:"dairy-free", label:"Dairy-free" },
+  { id:"high-protein",label:"High protein" },
+  { id:"low-carb",   label:"Lower carb" },
+];
+
+const ALLERGEN_LABEL = {
+  gluten:"gluten", dairy:"dairy", egg:"egg", fish:"fish", shellfish:"shellfish",
+  soy:"soy", sesame:"sesame", peanut:"peanut", "tree nuts":"tree nuts", nuts:"tree nuts"
+};
+
+function meal(id, slot, emoji, name, desc, diets, allergens, ingredients){
+  const totals = ingredients.reduce((a, ing) => {
+    for (let i = 2; i < 9; i++) a[i - 2] += ing[i] || 0;
+    return a;
+  }, [0,0,0,0,0,0,0]);
+  return { id, slot, emoji, name, desc, diets, allergens, ingredients,
+           base:{ cal:totals[0], protein:totals[1], carbs:totals[2], fat:totals[3],
+                  fiber:totals[4], sugar:totals[5], sodium:totals[6] } };
+}
+
+const MEALS = [
+  /* ---------------- breakfast ---------------- */
+  meal("b1","breakfast","🥣","Greek yogurt & berry bowl","Thick yogurt, juicy berries and a scatter of granola.",
+    ["vegetarian","gluten-free","high-protein"],["dairy"],
+    [["Greek yogurt (2%)","200 g",130,17,8,3.5,0,8,70],
+     ["Mixed berries","100 g",50,0.7,12,0.3,3,8,1],
+     ["Granola","30 g",130,3,19,5,2.5,6,40],
+     ["Honey","10 g",30,0,8,0,0,8,0]]),
+  meal("b2","breakfast","🍳","Veggie scramble on toast","Soft eggs, wilted spinach and toasted whole grain.",
+    ["vegetarian","high-protein"],["gluten","egg"],
+    [["Eggs","2 large",140,12,1,10,0,0,140],
+     ["Spinach","50 g",12,1.5,2,0.2,1.1,0.2,40],
+     ["Whole-grain toast","2 slices",160,8,28,2,4,3,300],
+     ["Olive oil","1 tsp",40,0,0,4.5,0,0,0]]),
+  meal("b3","breakfast","🥛","Overnight oats, banana & peanut butter","Made the night before; ready when you are.",
+    ["vegetarian","high-protein"],["gluten","dairy","peanut"],
+    [["Rolled oats","50 g",190,6.5,33,3.5,5,1,0],
+     ["Milk","200 ml",100,7,9.5,3.5,0,9.5,90],
+     ["Banana","1 medium",105,1.3,27,0.4,3,14,1],
+     ["Peanut butter","15 g",90,3.5,3,8,1,1,60]]),
+  meal("b4","breakfast","🥑","Avocado toast with tomato","Sourdough, smashed avocado, lemon and flaky salt.",
+    ["vegan","vegetarian","dairy-free","plant-based"],["gluten"],
+    [["Sourdough bread","2 slices",170,7,32,1.5,2,2,340],
+     ["Avocado","1/2 fruit",120,1.5,6,11,5,0.5,5],
+     ["Tomato","1 medium",22,1,4.8,0.2,1.5,3.2,5],
+     ["Olive oil & lemon","1 tsp",30,0,0,3.4,0,0,0]]),
+  meal("b5","breakfast","🍚","Tofu & sesame breakfast bowl","Savory, warm and quietly filling.",
+    ["vegan","vegetarian","dairy-free","gluten-free","plant-based","high-protein"],["soy","sesame"],
+    [["Firm tofu","150 g",180,18,3,11,2,1,15],
+     ["Brown rice, cooked","120 g",135,2.8,28,1,1.6,0.3,5],
+     ["Spinach","60 g",14,1.8,2.4,0.2,1.3,0.3,48],
+     ["Sesame oil & soy sauce","1 tsp",45,0.5,0.5,4.5,0,0,300]]),
+  meal("b6","breakfast","🍑","Cottage cheese, peach & almonds","Cool, creamy and gently sweet.",
+    ["vegetarian","gluten-free","high-protein","low-carb"],["dairy","tree nuts"],
+    [["Cottage cheese","200 g",180,24,7,5,0,6,600],
+     ["Peach","1 medium",60,1.4,15,0.4,2.3,13,0],
+     ["Almonds","15 g",86,3.2,3,7.5,1.9,0.7,0],
+     ["Cinnamon","pinch",0,0,0,0,0,0,0]]),
+  meal("b7","breakfast","🥯","Smoked salmon bagel","A weekend-feeling breakfast for a weekday.",
+    ["pescatarian","high-protein"],["gluten","dairy","fish"],
+    [["Bagel","1 plain",250,10,50,1.5,2,6,450],
+     ["Cream cheese","30 g",100,2,1,10,0,1,90],
+     ["Smoked salmon","60 g",100,12,0,5.5,0,0,600],
+     ["Cucumber","1/3 cup",8,0.3,2,0.1,0.3,1,1]]),
+  meal("b8","breakfast","🥭","Chia pudding with mango","Silky chia set overnight, bright mango on top.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],["tree nuts"],
+    [["Chia seeds","25 g",120,4,11,7.5,9,0,5],
+     ["Almond milk, unsweetened","200 ml",30,1,1,2.5,0,0,150],
+     ["Mango","120 g",72,1,18,0.5,2,16,1],
+     ["Maple syrup","10 g",35,0,9,0,0,9,0]]),
+  meal("b9","breakfast","🌾","Millet porridge with berries","Warm, nutty grains and coconut yogurt.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],[],
+    [["Millet, dry","45 g",170,5,33,2,3.5,0,2],
+     ["Oat drink, unsweetened","200 ml",80,2,12,2.5,1.5,4,60],
+     ["Coconut yogurt","100 g",110,1.5,7,8,0,5,20],
+     ["Mixed berries","100 g",50,0.7,12,0.3,3,8,1]]),
+  meal("b10","breakfast","🍠","Sweet potato & black bean hash","A savory start with cumin and lime.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],[],
+    [["Sweet potato","180 g",155,2.9,36,0.2,5.4,9,60],
+     ["Black beans, cooked","120 g",155,10,27,0.7,10,1.5,6],
+     ["Spinach","60 g",14,1.8,2.4,0.2,1.3,0.3,48],
+     ["Olive oil & lime","1 tsp",45,0,0,5,0,0,0]]),
+
+  /* ---------------- snacks ---------------- */
+  meal("s1","snack1","🍎","Apple with almond butter","Crisp, nutty and slow to disappear.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],["tree nuts"],
+    [["Apple","1 medium",95,0.5,25,0.3,4.4,19,2],
+     ["Almond butter","20 g",120,4,4,11,2.5,1,0]]),
+  meal("s2","snack1","🥛","Greek yogurt cup","Plain yogurt with a little honey.",
+    ["vegetarian","gluten-free","high-protein"],["dairy"],
+    [["Greek yogurt","150 g",100,15,6,2.5,0,6,55],
+     ["Honey","1 tsp",20,0,5,0,0,5,0]]),
+  meal("s3","snack1","🥕","Hummus & crunchy vegetables","Carrot, cucumber and pepper for dipping.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],["sesame"],
+    [["Hummus","60 g",145,5,12,8,4,1,300],
+     ["Carrot, cucumber & pepper","1 cup",30,0.7,7,0.2,2,3,35]]),
+  meal("s4","snack1","🥜","Trail mix handful","Nuts, seeds and a few raisins.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],["tree nuts","peanut"],
+    [["Trail mix","30 g",150,4,14,9,2,9,60]]),
+  meal("s5","snack1","🍘","Rice cakes with cottage cheese","Light, salty-crunchy, protein on top.",
+    ["vegetarian","gluten-free","high-protein"],["dairy"],
+    [["Rice cakes","2",70,1.4,14,0.6,0.6,0.2,40],
+     ["Cottage cheese","100 g",90,12,3.5,2.5,0,3,300],
+     ["Black pepper","pinch",0,0,0,0,0,0,0]]),
+  meal("s6","snack1","🫛","Salted edamame","Straight from the pod, still warm.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],["soy"],
+    [["Edamame, shelled","120 g",145,13,11,5,5,2,5],
+     ["Sea salt","pinch",0,0,0,0,0,0,0]]),
+  meal("s7","snack1","🍿","Air-popped popcorn","A big bowl for very few calories.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],[],
+    [["Popcorn, air-popped","25 g",95,3,19,1.1,3.6,0.2,2],
+     ["Olive oil spray","1 spray",5,0,0,0.5,0,0,0]]),
+  meal("s8","snack1","🍊","Orange & walnuts","Sweet citrus, bitter-skinned nuts.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],["tree nuts"],
+    [["Orange","1 medium",62,1.2,15,0.2,3,12,0],
+     ["Walnuts","20 g",131,3,2.7,13,1.3,0.5,0]]),
+  meal("s9","snack1","🧀","Cheddar & grapes","The oldest snack there is, for good reason.",
+    ["vegetarian","gluten-free","low-carb"],["dairy"],
+    [["Cheddar","30 g",120,7,0.4,10,0,0,180],
+     ["Grapes","100 g",69,0.7,18,0.2,0.9,16,2]]),
+  meal("s10","snack1","🥤","Banana protein smoothie","Plant protein, oat milk, cinnamon.",
+    ["vegan","vegetarian","dairy-free","plant-based","high-protein"],["soy","gluten"],
+    [["Plant protein powder","25 g",100,20,2,1.5,0.5,1,150],
+     ["Oat milk","200 ml",90,3,14,2.5,2,7,60],
+     ["Banana","1 small",90,1.1,23,0.3,2.6,12,1],
+     ["Cinnamon","pinch",0,0,0,0,0,0,0]]),
+  meal("s11","snack1","🍐","Pear & pumpkin seeds","Juicy pear, toasted seeds.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],[],
+    [["Pear","1 medium",101,0.6,27,0.2,5.5,17,2],
+     ["Pumpkin seeds","20 g",113,5.5,3,9.5,1,0.3,2]]),
+  meal("s12","snack1","🫐","Berries with coconut yogurt","Thick, tangy, barely sweet.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],[],
+    [["Coconut yogurt","150 g",165,2.3,10,12,0,7,30],
+     ["Mixed berries","120 g",60,0.8,14,0.4,3.6,10,1]]),
+  meal("s13","snack1","🌽","Roasted corn & lime cup","Charred corn, chili, lime, a little salt.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based"],[],
+    [["Sweetcorn","150 g",130,5,27,1.8,3.6,6,15],
+     ["Lime & chili","1 tsp",5,0.1,1,0,0.3,0.3,1]]),
+
+  /* ---------------- lunch ---------------- */
+  meal("l1","lunch","🍗","Grilled chicken & quinoa bowl","Roasted vegetables, lemon, a little olive oil.",
+    ["gluten-free","high-protein"],[],
+    [["Chicken breast","130 g",215,40,0,4.7,0,0,85],
+     ["Quinoa, cooked","120 g",145,5,26,2.4,3,0.5,10],
+     ["Roasted vegetables","150 g",90,3,14,2.5,4,6,60],
+     ["Olive oil","1 tsp",40,0,0,4.5,0,0,0]]),
+  meal("l2","lunch","🥣","Lentil & vegetable soup","With a warm whole-grain roll.",
+    ["vegan","vegetarian","dairy-free","plant-based"],["gluten"],
+    [["Lentil vegetable soup","350 ml",230,13,36,3.5,9,6,480],
+     ["Whole-grain roll","1 small",130,4.5,24,2,2,2,230]]),
+  meal("l3","lunch","🌯","Turkey & avocado wrap","Lettuce, tomato, and a squeeze of lime.",
+    ["high-protein"],["gluten"],
+    [["Whole-wheat tortilla","1 large",150,4,25,4,2,1,320],
+     ["Sliced turkey","90 g",120,22,1,2.5,0,0,600],
+     ["Avocado","1/4 fruit",60,0.8,3,5.5,2.5,0.2,2],
+     ["Lettuce & tomato","1 cup",20,1,4,0.2,1,3,5]]),
+  meal("l4","lunch","🥗","Mediterranean chickpea salad","Chickpeas, crisp vegetables, feta, olive oil.",
+    ["vegetarian","gluten-free","high-protein"],["dairy"],
+    [["Chickpeas, cooked","150 g",240,12,36,5,9,4,20],
+     ["Cucumber, tomato & pepper","150 g",45,1.7,9,0.4,3,6,15],
+     ["Feta","30 g",80,4.5,1,6.5,0,0,320],
+     ["Olive oil & lemon","1 tbsp",60,0,0,7,0,0,0]]),
+  meal("l5","lunch","🐟","Tuna & white bean salad","Pantry lunch with real substance.",
+    ["pescatarian","gluten-free","dairy-free","high-protein","low-carb"],["fish"],
+    [["Tuna in water","100 g",130,29,0,1,0,0,350],
+     ["Cannellini beans","120 g",130,8,23,0.6,7,0.5,10],
+     ["Tomato & red onion","1 cup",30,1,6,0.2,1.5,4,5],
+     ["Olive oil","1 tbsp",60,0,0,7,0,0,0]]),
+  meal("l6","lunch","🍜","Soba noodle bowl with tofu","Nutty noodles, crisp vegetables, sesame dressing.",
+    ["vegetarian","dairy-free","high-protein"],["gluten","soy","sesame"],
+    [["Soba noodles, cooked","100 g",99,5,21,0.5,1,0,60],
+     ["Firm tofu","100 g",120,12,2,7,1,0.5,10],
+     ["Broccoli & carrot","120 g",45,3,8,0.4,3,4,40],
+     ["Sesame dressing","1 tbsp",50,1,3,4,0.5,2,200]]),
+  meal("l7","lunch","🍅","Caprese sandwich","Mozzarella, ripe tomato, basil, good olive oil.",
+    ["vegetarian"],["gluten","dairy"],
+    [["Ciabatta roll","1",220,8,40,3,2,2,420],
+     ["Fresh mozzarella","60 g",180,13,1,13,0,0,300],
+     ["Tomato & basil","1 cup",25,1,5,0.2,1.4,3,5],
+     ["Olive oil","1 tsp",40,0,0,4.5,0,0,0]]),
+  meal("l8","lunch","🍣","Salmon rice bowl","Flaked salmon, rice, edamame, cucumber.",
+    ["pescatarian","dairy-free","high-protein"],["fish","soy","sesame"],
+    [["Salmon","110 g",230,24,0,14,0,0,90],
+     ["White rice, cooked","150 g",200,4,44,0.5,1,0,5],
+     ["Edamame","60 g",70,6,5,2.5,2.5,1,3],
+     ["Cucumber & sesame","1/2 cup",30,1,5,2,1,2,120]]),
+  meal("l9","lunch","🧆","Falafel pita with salad","Crisp falafel, chopped salad, tahini drizzle.",
+    ["vegan","vegetarian","dairy-free","plant-based"],["gluten","sesame"],
+    [["Falafel","3 pieces",190,7,18,10,5,2,300],
+     ["Pita bread","1",170,6,34,1.5,2,2,320],
+     ["Salad with tahini","1 cup",110,3,6,8,2,2,150]]),
+  meal("l10","lunch","🍠","Roasted sweet potato & lentil bowl","Warm lentils, greens, lemon-tahini.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],["sesame"],
+    [["Sweet potato, roasted","200 g",172,3.2,40,0.2,6,9,65],
+     ["Green lentils, cooked","150 g",174,13.5,30,0.6,11.7,3,3],
+     ["Kale & tomato","100 g",40,2.5,7,0.6,2,3,25],
+     ["Lemon tahini dressing","1 tbsp",90,2.5,3,8,1,1,90]]),
+  meal("l11","lunch","🍲","Miso vegetable & rice bowl","Steamed greens, brown rice, ginger miso.",
+    ["vegan","vegetarian","dairy-free","plant-based"],["soy"],
+    [["Brown rice, cooked","150 g",170,3.5,35,1.3,2,0.4,6],
+     ["Roasted squash & broccoli","200 g",80,4,13,1.5,4.5,6,60],
+     ["Chickpeas","100 g",160,8,24,3.5,6,3,15],
+     ["Miso ginger dressing","1 tbsp",45,1.5,3,3,0.5,1,380]]),
+  meal("l12","lunch","🥙","Chicken, rice & cucumber bowl","Simple, fresh, and easy to batch-cook.",
+    ["gluten-free","dairy-free","high-protein","low-carb"],[],
+    [["Chicken breast","130 g",215,40,0,4.7,0,0,85],
+     ["White rice, cooked","120 g",160,3.2,35,0.4,0.8,0,4],
+     ["Cucumber & tomato salad","150 g",35,1.4,7,0.3,2,5,10],
+     ["Olive oil & herbs","1 tsp",40,0,0,4.5,0,0,0]]),
+  meal("l13","lunch","🥗","Quinoa & roasted vegetable salad","Lemon, herbs and a handful of seeds.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],[],
+    [["Quinoa, cooked","150 g",180,6.6,32,3,4,0.6,12],
+     ["Roasted courgette & pepper","180 g",90,3,12,3.5,4,6,40],
+     ["Chickpeas","100 g",160,8,24,3.5,6,3,15],
+     ["Lemon & olive oil dressing","1 tbsp",70,0,0,8,0,0,0]]),
+  meal("l14","lunch","🍲","Chickpea & spinach stew","Tomato, cumin, and a spoon of yogurt if you like.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],[],
+    [["Chickpeas, cooked","180 g",290,15,43,6,11,5,25],
+     ["Tomato & spinach","200 g",70,3.5,10,1.5,4,7,120],
+     ["Olive oil","1 tsp",40,0,0,4.5,0,0,0],
+     ["Brown rice, cooked","100 g",110,2.3,23,0.8,1.3,0.2,4]]),
+
+  /* ---------------- dinner ---------------- */
+  meal("d1","dinner","🐟","Baked salmon, potatoes & greens","One tray, lemon and dill, very little washing up.",
+    ["pescatarian","gluten-free","dairy-free","high-protein"],["fish"],
+    [["Salmon fillet","150 g",310,32,0,19,0,0,110],
+     ["Baby potatoes","200 g",155,4,35,0.3,3,2,10],
+     ["Broccoli","150 g",50,4,8,0.6,4,2,45],
+     ["Olive oil & lemon","1 tsp",50,0,0,5.5,0,0,0]]),
+  meal("d2","dinner","🥘","Chicken & vegetable stir-fry","Ginger, soy, and whatever vegetables you have.",
+    ["dairy-free","high-protein"],["soy"],
+    [["Chicken thigh","140 g",250,30,0,14,0,0,180],
+     ["Stir-fry vegetables","200 g",80,4,13,1,4.5,6,80],
+     ["Jasmine rice, cooked","150 g",200,4,44,0.5,1,0,5],
+     ["Soy & ginger sauce","1 tbsp",25,1,3,0.5,0,1,600]]),
+  meal("d3","dinner","🌶️","Black bean chili with rice","Smoky, freezer-friendly, quietly filling.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],[],
+    [["Black beans, cooked","180 g",230,15,40,1,15,2,10],
+     ["Tomato & pepper","200 g",60,2.5,12,0.6,3.5,8,25],
+     ["Brown rice, cooked","120 g",135,2.8,28,1,1.6,0.3,5],
+     ["Spices & olive oil","1 tsp",45,0,0,5,0,0,5]]),
+  meal("d4","dinner","🍗","Roast chicken, couscous & carrots","Cumin-roasted carrots, cool yogurt dressing.",
+    ["high-protein"],["gluten","dairy"],
+    [["Chicken breast","140 g",230,43,0,5,0,0,90],
+     ["Couscous, cooked","150 g",170,6,31,0.4,2,0.3,5],
+     ["Roasted carrots","150 g",60,1.5,13,1,4,7,90],
+     ["Yogurt dressing","2 tbsp",60,3,3,4.5,0,3,60]]),
+  meal("d5","dinner","🍛","Red lentil dal with naan","Soft lentils, spinach, warm bread.",
+    ["vegetarian"],["gluten","dairy"],
+    [["Red lentils, dry","80 g",270,19,46,1.5,12,3,10],
+     ["Tomato & spinach base","200 g",70,3,11,2,4,6,300],
+     ["Naan","60 g",180,5,30,5,1.5,3,350],
+     ["Plain yogurt","2 tbsp",30,2,2,1.5,0,1,25]]),
+  meal("d6","dinner","🍤","Shrimp & vegetable pasta","Garlic, zucchini, a little chili.",
+    ["pescatarian","high-protein"],["shellfish","gluten"],
+    [["Shrimp","120 g",110,23,1,1.4,0,0,220],
+     ["Whole-wheat pasta, dry","100 g",350,14,68,2.5,9,4,10],
+     ["Zucchini & tomato","180 g",55,2,11,0.5,3,7,20],
+     ["Garlic olive oil","1 tbsp",60,0,0,7,0,0,0]]),
+  meal("d7","dinner","🍲","Tofu & vegetable curry","Coconut curry, basmati rice, tender greens.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],["soy"],
+    [["Firm tofu","150 g",180,18,3,11,2,1,15],
+     ["Coconut curry sauce","120 ml",190,3,9,16,2,6,420],
+     ["Mixed vegetables","200 g",80,4,13,1,4.5,6,80],
+     ["Basmati rice, cooked","150 g",200,4,44,0.5,1,0,5]]),
+  meal("d8","dinner","🍝","Turkey meatballs & spaghetti","Slow-simmered tomato sauce, a little parmesan.",
+    ["high-protein"],["gluten","dairy"],
+    [["Turkey mince","130 g",200,28,0,9,0,0,140],
+     ["Tomato sauce","120 g",70,2,11,2,2.5,7,350],
+     ["Spaghetti, dry","90 g",315,11,62,2,3.5,2,10],
+     ["Parmesan","15 g",60,5.5,0.5,4.5,0,0,250]]),
+  meal("d9","dinner","🐠","Cod, barley & peas","Herb butter melting over white fish.",
+    ["pescatarian","high-protein"],["gluten","dairy","fish"],
+    [["Cod fillet","150 g",135,30,0,1,0,0,130],
+     ["Pearl barley, cooked","150 g",185,4,38,0.7,6,0.5,5],
+     ["Peas","100 g",80,5.5,14,0.4,5,5,5],
+     ["Herb butter","1 tsp",60,0.1,0,7,0,0,70]]),
+  meal("d10","dinner","🍠","Stuffed sweet potatoes with lentils","Roasted until collapsing, herby lentils inside.",
+    ["vegan","vegetarian","gluten-free","dairy-free","plant-based","high-protein"],[],
+    [["Sweet potato","250 g",215,4,50,0.3,7.5,13,80],
+     ["Green lentils, cooked","150 g",174,13.5,30,0.6,11.7,3,3],
+     ["Kale & tomato","120 g",45,3,8,0.7,2.5,4,30],
+     ["Olive oil & herbs","1 tsp",45,0,0,5,0,0,0]]),
+  meal("d11","dinner","🐟","Herby white fish with potatoes","One pan, lemon, parsley, tender greens.",
+    ["pescatarian","gluten-free","dairy-free","high-protein"],["fish"],
+    [["White fish fillet","150 g",130,28,0,1.5,0,0,120],
+     ["New potatoes","220 g",170,4.4,38,0.3,3.3,2,12],
+     ["Green beans","150 g",50,2.7,10,0.2,4,3,5],
+     ["Olive oil & lemon","1 tsp",45,0,0,5,0,0,0]]),
+];
+
+/* rotate snacks across both snack slots */
+const POOLS = {
+  breakfast: MEALS.filter(m => m.slot === "breakfast"),
+  lunch: MEALS.filter(m => m.slot === "lunch"),
+  dinner: MEALS.filter(m => m.slot === "dinner"),
+  snack: MEALS.filter(m => m.slot === "snack1"),
+};
+</script>
+<script>
+"use strict";
+
+/* ============================================================
+   State
+   ============================================================ */
+const STORAGE_KEY = "nourish.state.v1";
+
+const defaultState = () => ({
+  goals: Object.fromEntries(NUTRIENTS.map(n => [n.key, { value:n.def, mode:n.mode, on:true }])),
+  diets: ["vegetarian"],
+  avoids: [],
+  slots: Object.fromEntries(SLOTS.map(s => [s.id, s.defaultOn])),
+  plan: null,
+  seed: 1,
+});
+
+let state = load();
+let lastFocused = null;
+
+function load(){
+  const base = defaultState();
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return base;
+    const saved = JSON.parse(raw);
+    const merged = { ...base, ...saved };
+    merged.goals = { ...base.goals };
+    for (const n of NUTRIENTS){
+      const s = saved.goals?.[n.key];
+      merged.goals[n.key] = s
+        ? { value:Number(s.value) || 0, mode:s.mode === "limit" ? "limit" : "reach", on:s.on !== false }
+        : base.goals[n.key];
+    }
+    merged.slots = { ...base.slots, ...(saved.slots || {}) };
+    merged.diets = Array.isArray(saved.diets) ? saved.diets.filter(d => DIETS.some(x => x.id === d)) : base.diets;
+    merged.avoids = Array.isArray(saved.avoids) ? saved.avoids.filter(a => typeof a === "string").slice(0, 40) : [];
+    merged.plan = saved.plan && Array.isArray(saved.plan.rows) ? saved.plan : null;
+    return merged;
+  } catch { return base; }
+}
+
+let saveTimer = null;
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch { /* storage unavailable — planning still works for this session */ }
+  const el = document.getElementById("saveState");
+  if (el){
+    el.innerHTML = '<span class="pulse-dot" aria-hidden="true"></span> Saved on this device';
+  }
+}
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 350);
+}
+
+/* ============================================================
+   Helpers
+   ============================================================ */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+const round = (n, step = 1) => Math.round(n / step) * step;
+
+function normalise(s){
+  return String(s).toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const AVOID_ALIASES = {
+  nuts:["tree nuts","peanut"], "tree nut":["tree nuts"], peanuts:["peanut"],
+  eggs:["egg"], dairy:[ "dairy"], milk:["dairy"], lactose:["dairy"],
+  wheat:["gluten"], bread:["gluten"], "gluten free":["gluten"],
+  shellfish:["shellfish"], shrimp:["shellfish"], prawns:["shellfish"],
+  fish:["fish"], salmon:["fish"], tuna:["fish"], cod:["fish"],
+  soy:["soy"], soya:["soy"], tofu:["soy"], sesame:["sesame"], tahini:["sesame"],
+  gluten:["gluten"], cheese:["dairy"], yogurt:["dairy"], yoghurt:["dairy"],
+};
+
+function avoidTerms(){
+  const out = [];
+  for (const raw of state.avoids){
+    const n = normalise(raw);
+    if (!n) continue;
+    out.push({ raw, needles:[n, ...(AVOID_ALIASES[n] || [])] });
+  }
+  return out;
+}
+
+function mealBlocked(m, terms){
+  const tags = m.allergens.map(normalise);
+  const ingText = m.ingredients.map(i => normalise(i[0])).join(" | ");
+  return terms.some(({ needles }) => needles.some(needle => {
+    if (!needle) return false;
+    if (tags.some(t => t === needle || t.includes(needle) || needle.includes(t))) return true;
+    return ingText.includes(needle);
+  }));
+}
+
+function dietAllows(m){
+  const d = state.diets;
+  if (!d.length) return true;
+  const tags = m.diets;
+  const plantOnly = tags.includes("vegan");
+  const veg = plantOnly || tags.includes("vegetarian");
+  const pesc = veg || tags.includes("pescatarian");
+  if (d.includes("vegan") && !plantOnly) return false;
+  if (d.includes("vegetarian") && !veg) return false;
+  if (d.includes("pescatarian") && !pesc) return false;
+  if (d.includes("gluten-free") && !tags.includes("gluten-free")) return false;
+  if (d.includes("dairy-free") && !tags.includes("dairy-free")) return false;
+  return true;
+}
+
+function candidatesFor(slotId){
+  const terms = avoidTerms();
+  const pool = slotId.startsWith("snack") ? POOLS.snack : POOLS[slotId];
+  const allowed = pool.filter(m => dietAllows(m) && !mealBlocked(m, terms));
+  return allowed.length ? allowed : [];
+}
+
+function enabledSlots(){
+  const on = SLOTS.filter(s => state.slots[s.id]);
+  return on.length ? on : [SLOTS[0]];
+}
+
+/* multiplier → scaled nutrition */
+function scaled(m, mult){
+  const b = m.base;
+  return {
+    cal: b.cal * mult, protein: b.protein * mult, carbs: b.carbs * mult, fat: b.fat * mult,
+    fiber: b.fiber * mult, sugar: b.sugar * mult, sodium: b.sodium * mult,
+  };
+}
+
+function goalOf(key){
+  const g = state.goals[key];
+  return g && g.on ? g : null;
+}
+
+/* ============================================================
+   Plan building
+   ============================================================ */
+function pseudoRandom(seed){
+  let t = seed + 0x6D2B79F5;
+  return function(){
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function scoreMeal(m, slotCalTarget, slot){
+  const b = m.base;
+  if (!b.cal) return 1e9;
+  let score = Math.abs(b.cal - slotCalTarget) / Math.max(slotCalTarget, 1);
+  if (state.diets.includes("high-protein")) score -= Math.min(b.protein / Math.max(b.cal, 1), 0.3) * 0.9;
+  if (state.diets.includes("low-carb")) score += Math.min(b.carbs / Math.max(b.cal, 1), 0.6) * 0.5;
+  const sugarGoal = goalOf("sugar"), sodiumGoal = goalOf("sodium");
+  if (sugarGoal?.mode === "limit") score += Math.min(b.sugar / Math.max(sugarGoal.value, 1), 1.5) * 0.16;
+  if (sodiumGoal?.mode === "limit") score += Math.min(b.sodium / Math.max(sodiumGoal.value, 1), 1.5) * 0.14;
+  if (slot?.id === "snack1" && b.cal > 260) score += 0.4;
+  return score;
+}
+
+function bestPortion(m, targetCal){
+  if (!m.base.cal) return 1;
+  const raw = targetCal / m.base.cal;
+  return clamp(round(raw * 4) / 4, 0.5, 2);
+}
+
+function buildPlan(seed = Date.now() % 100000){
+  const slots = enabledSlots();
+  const totalShare = slots.reduce((a, s) => a + s.share, 0);
+  const calGoal = goalOf("calories")?.value || 2000;
+  const rnd = pseudoRandom(seed);
+  const used = [];
+  const rows = [];
+  for (const slot of slots){
+    const targetCal = calGoal * (slot.share / totalShare);
+    const pool = candidatesFor(slot.id);
+    if (!pool.length){
+      rows.push({ slotId:slot.id, mealId:null, mult:1 });
+      continue;
+    }
+    const ranked = pool
+      .map(m => {
+        const reuse = used.filter(id => id === m.id).length;
+        return { m, score:scoreMeal(m, targetCal, slot) + reuse * 0.75 + rnd() * 0.16 };
+      })
+      .sort((a, b) => a.score - b.score);
+    const pick = ranked[0].m;
+    used.push(pick.id);
+    rows.push({ slotId:slot.id, mealId:pick.id, mult:bestPortion(pick, targetCal) });
+  }
+  return { seed, rows, builtAt:Date.now() };
+}
+
+function filterSignature(){
+  return JSON.stringify({
+    diets:[...state.diets].sort(),
+    avoids:state.avoids.map(normalise).sort(),
+    slots:SLOTS.filter(s => state.slots[s.id]).map(s => s.id),
+  });
+}
+
+function ensurePlan(){
+  const sig = filterSignature();
+  if (!state.plan || !state.plan.rows?.length || state.plan.sig !== sig){
+    state.plan = buildPlan(state.seed + 1);
+    state.seed += 1;
+    state.plan.sig = sig;
+  }
+  const validIds = new Set(MEALS.map(m => m.id));
+  state.plan.rows = state.plan.rows.filter(r => SLOTS.some(s => s.id === r.slotId) && state.slots[r.slotId]);
+  for (const r of state.plan.rows){
+    if (r.mealId && !validIds.has(r.mealId)) r.mealId = null;
+    r.mult = clamp(Number(r.mult) || 1, 0.25, 3);
+  }
+  return state.plan;
+}
+
+function mealById(id){ return MEALS.find(m => m.id === id) || null; }
+
+function planTotals(){
+  const plan = ensurePlan();
+  const totals = { cal:0, protein:0, carbs:0, fat:0, fiber:0, sugar:0, sodium:0 };
+  for (const r of plan.rows){
+    const m = mealById(r.mealId);
+    if (!m) continue;
+    const s = scaled(m, r.mult);
+    for (const k in totals) totals[k] += s[k];
+  }
+  return totals;
+}
+</script>
+<script>
+"use strict";
+
+/* ============================================================
+   Toasts
+   ============================================================ */
+function toast(message, icon = "check"){
+  const stack = $("#toastStack");
+  if (!stack) return;
+  const el = document.createElement("div");
+  el.className = "toast";
+  const paths = {
+    check:'<path d="m4.5 12.5 4.8 4.8L19.5 7"/>',
+    swap:'<path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/>',
+    spark:'<path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="m6 6 2.5 2.5"/><path d="m15.5 15.5 2.5 2.5"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/>',
+  };
+  el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[icon] || paths.check}</svg><span></span>`;
+  el.querySelector("span").textContent = message;
+  stack.appendChild(el);
+  while (stack.children.length > 3) stack.firstElementChild.remove();
+  setTimeout(() => {
+    el.classList.add("leaving");
+    el.addEventListener("animationend", () => el.remove(), { once:true });
+  }, 3200);
+}
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+let currentScreen = "setup";
+
+function goTo(name, opts = {}){
+  if (name === currentScreen) {
+    if (name === "plan") renderPlan();
+    return;
+  }
+  const next = document.getElementById(`screen-${name}`);
+  const prev = document.getElementById(`screen-${currentScreen}`);
+  if (!next) return;
+
+  if (name === "plan"){
+    ensurePlan();
+    renderPlan();
+  } else {
+    renderSetup();
+  }
+
+  prev.classList.remove("is-active");
+  prev.hidden = true;
+  next.hidden = false;
+  next.classList.add("is-active", "is-entering");
+  setTimeout(() => next.classList.remove("is-entering"), 600);
+
+  currentScreen = name;
+  if (opts.remember !== false){
+    try{ history.replaceState(null, "", name === "plan" ? "#plan" : "#goals"); } catch {}
+  }
+  $$(".nav-btn").forEach(b => {
+    if (b.dataset.go === name) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  window.scrollTo({ top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+
+/* ============================================================
+   Setup screen
+   ============================================================ */
+function renderGoalFields(changedKey){
+  const host = $("#goalFields");
+  host.innerHTML = NUTRIENTS.map(n => {
+    const g = state.goals[n.key];
+    const isLimit = g.mode === "limit";
+    return `
+      <div class="nutrient" data-key="${n.key}">
+        <div class="n-head">
+          <label class="n-name" for="goal-${n.key}">${n.label}</label>
+          <span class="n-mode">${isLimit ? "limit" : "reach"}</span>
+        </div>
+        <div class="num-wrap">
+          <input type="number" id="goal-${n.key}" data-goal="${n.key}" inputmode="numeric"
+            min="0" step="${n.step}" value="${g.value}" aria-label="${n.label} daily ${isLimit ? "limit" : "target"} in ${n.unit}" />
+          <span class="unit">${n.unit}</span>
+        </div>
+        <button class="chip" type="button" data-mode="${n.key}" aria-pressed="${isLimit}" style="justify-self:start; font-size:.72rem; padding:3px 9px">
+          ${isLimit ? "Stay under" : "Aim for"}
+        </button>
+      </div>`;
+  }).join("");
+
+  if (changedKey){
+    const input = host.querySelector(`[data-goal="${changedKey}"]`);
+    if (input) input.classList.add("changed");
+  }
+}
+
+function renderPreview(){
+  const host = $("#previewStats");
+  const calGoal = goalOf("calories");
+  const onboarding = !state.plan;
+  const totals = onboarding ? null : planTotals();
+
+  const stats = [
+    { key:"calories", label:"Energy" },
+    { key:"protein", label:"Protein" },
+    { key:"fiber", label:"Fiber" },
+    { key:"sugar", label:"Sugar" },
+  ];
+
+  host.innerHTML = stats.map(({ key, label }) => {
+    const g = goalOf(key);
+    if (!g) return "";
+    const n = NUTRIENTS.find(x => x.key === key);
+    const val = totals ? totals[key] : null;
+    const pct = totals && g.value ? clamp((val / g.value) * 100, 0, 130) : 0;
+    const good = totals && (g.mode === "limit" ? val <= g.value : val >= g.value * 0.85);
+    const color = !totals ? "var(--olive)" : good ? "var(--olive)" : "var(--gold)";
+    return `
+      <div class="preview-stat">
+        <div style="flex:1; min-width:0">
+          <div class="ps-label">${label} <span style="font-weight:500; color:var(--muted)">· ${g.mode === "limit" ? "under" : "aim"} ${g.value.toLocaleString()}${n.unit === "kcal" ? " kcal" : " " + n.unit}</span></div>
+          <div class="mini-bar" aria-hidden="true"><i style="width:${pct}%; background:${color}"></i></div>
+        </div>
+        <div class="ps-value" style="color:${totals ? "var(--ink)" : "var(--muted)"}">${totals ? Math.round(val) : "—"}</div>
+      </div>`;
+  }).filter(Boolean).join("") || '<p class="empty-hint">Turn on at least one nutrient goal to see your preview.</p>';
+
+  const note = $("#previewNote");
+  if (!state.diets.length && !state.avoids.length){
+    note.textContent = "Plans are built from whole-food building blocks and scaled to your calorie target.";
+  } else {
+    const bits = [];
+    if (state.diets.length) bits.push(DIETS.filter(d => state.diets.includes(d.id)).map(d => d.label.toLowerCase()).join(" + "));
+    if (state.avoids.length) bits.push(`without ${state.avoids.slice(0, 3).join(", ")}${state.avoids.length > 3 ? ` +${state.avoids.length - 3}` : ""}`);
+    note.textContent = `Meals will be ${bits.join(", ")}.`;
+  }
+}
+
+function renderAvoidList(){
+  const host = $("#avoidList");
+  if (!state.avoids.length){
+    host.innerHTML = '<p class="empty-hint">Nothing added yet — that’s fine if you eat everything.</p>';
+    return;
+  }
+  host.innerHTML = state.avoids.map((a, i) => `
+    <span class="avoid-pill">${escapeHtml(a)}
+      <button type="button" data-remove-avoid="${i}" aria-label="Remove ${escapeHtml(a)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </span>`).join("");
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function renderSetup(focusSel){
+  renderGoalFields();
+  const chips = $("#dietChips");
+  chips.innerHTML = DIETS.map(d => `
+    <button type="button" class="chip" data-diet="${d.id}" aria-pressed="${state.diets.includes(d.id)}">
+      <span class="chip-dot" aria-hidden="true"></span>${d.label}
+    </button>`).join("");
+
+  const toggles = $("#slotToggles");
+  toggles.innerHTML = SLOTS.map(s => `
+    <div class="toggle-row">
+      <div>
+        <div class="t-label">${s.label}</div>
+        <div class="t-sub">${s.time}</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" data-slot="${s.id}" ${state.slots[s.id] ? "checked" : ""} aria-label="Include ${s.label} in the plan" />
+        <span class="track" aria-hidden="true"></span><span class="thumb" aria-hidden="true"></span>
+      </label>
+    </div>`).join("");
+
+  renderAvoidList();
+  renderPreview();
+  if (focusSel){
+    const target = document.querySelector(focusSel);
+    if (target) target.focus({ preventScroll:true });
+  }
+}
+</script>
+<script>
+"use strict";
+
+/* ============================================================
+   Plan screen rendering
+   ============================================================ */
+function statusClass(kind, val, goal){
+  if (!goal) return "under";
+  if (goal.mode === "limit") return val > goal.value ? "over" : "good";
+  if (val >= goal.value * 0.9) return "good";
+  if (val >= goal.value * 0.6) return "near";
+  return "under";
+}
+
+function renderMacros(totals){
+  const keys = ["protein","carbs","fat","fiber"];
+  const host = $("#macroGrid");
+  host.innerHTML = keys.map(k => {
+    const n = NUTRIENTS.find(x => x.key === k);
+    const g = goalOf(k);
+    const val = totals[k];
+    if (!g){
+      return `<div class="macro">
+        <div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${Math.round(val)} g</span></div>
+        <div class="m-track" aria-hidden="true"><div class="m-fill under" style="width:0%"></div></div>
+      </div>`;
+    }
+    const pct = clamp((val / Math.max(g.value, 1)) * 100, 0, 100);
+    const cls = statusClass(k, val, g);
+    const remain = g.mode === "limit" ? g.value - val : g.value - val;
+    const caption = g.mode === "limit"
+      ? (remain >= 0 ? `${Math.round(remain)} g left` : `${Math.round(-remain)} g over`)
+      : (remain > 0 ? `${Math.round(remain)} g to go` : `Goal met`);
+    return `<div class="macro">
+      <div class="m-top">
+        <span class="m-name">${n.label}</span>
+        <span class="m-val">${Math.round(val)} <small>/ ${g.value} g</small></span>
+      </div>
+      <div class="m-track" role="img" aria-label="${n.label}: ${Math.round(val)} grams of ${g.value} gram ${g.mode === "limit" ? "limit" : "goal"}, ${caption}">
+        <div class="m-fill ${cls}" style="width:${pct}%"></div>
+      </div>
+      <span class="limit-caption">${caption}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderRing(totals){
+  const g = goalOf("calories");
+  const total = Math.round(totals.cal);
+  const goal = g ? g.value : 0;
+  const ratio = goal ? clamp(total / goal, 0, 1.35) : 0;
+  const circumference = 2 * Math.PI * 54;
+  const ring = $("#ringFg");
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = circumference * (1 - Math.min(ratio, 1));
+  $("#ringPct").textContent = goal ? `${Math.round((total / goal) * 100)}%` : "—";
+  $("#calTotal").textContent = total.toLocaleString();
+  $("#calSub").innerHTML = goal
+    ? `of <b>${goal.toLocaleString()}</b> kcal goal · <span style="color:${total > goal * 1.05 ? "var(--over)" : "var(--olive-dark)"}">${total > goal ? `${(total - goal).toLocaleString()} over` : `${(goal - total).toLocaleString()} left`}</span>`
+    : "Calorie goal turned off";
+}
+
+function renderPlanTable(totals){
+  const plan = ensurePlan();
+  const body = $("#planBody");
+  const foot = $("#planFoot");
+  const calGoal = goalOf("calories")?.value || 2000;
+
+  body.innerHTML = plan.rows.map((r, idx) => {
+    const slot = SLOTS.find(s => s.id === r.slotId) || SLOTS[0];
+    const m = mealById(r.mealId);
+    if (!m){
+      return `<tr class="row-in" style="animation-delay:${idx * 60}ms">
+        <td class="cell-slot"><div class="meal-slot"><span class="slot-name">${slot.label}</span><span class="slot-time">${slot.time}</span></div></td>
+        <td class="cell-meal" colspan="6">
+          <div class="meal-name">No match for your filters</div>
+          <p class="meal-desc">Nothing in this slot fits every preference you selected. Try loosening one filter on the goals screen.</p>
+        </td>
+        <td class="cell-actions"><div class="row-actions"><button class="btn btn-sm" type="button" data-go="setup">Adjust filters</button></div></td>
+      </tr>`;
+    }
+    const s = scaled(m, r.mult);
+    return `<tr class="row-in" data-row="${r.slotId}" style="animation-delay:${idx * 70}ms">
+      <td class="cell-slot">
+        <div class="meal-slot"><span class="slot-name">${slot.label}</span><span class="slot-time">${slot.time}</span></div>
+      </td>
+      <td class="cell-meal">
+        <div class="meal-name"><span class="emoji" aria-hidden="true">${m.emoji}</span>${escapeHtml(m.name)}</div>
+        <p class="meal-desc">${escapeHtml(m.desc)}</p>
+        <div class="meal-tags">
+          ${m.diets.slice(0, 2).map(d => `<span class="tag green">${labelForDiet(d)}</span>`).join("")}
+          ${m.allergens.length ? `<span class="tag terra">contains ${m.allergens.slice(0, 2).join(", ")}</span>` : ""}
+        </div>
+      </td>
+      <td class="portion-cell">
+        <span class="portion-label">${portionText(m, r.mult)}</span>
+        <div class="stepper" role="group" aria-label="Portion for ${escapeHtml(m.name)}">
+          <button type="button" data-step="-1" data-slot="${r.slotId}" aria-label="Reduce portion of ${escapeHtml(m.name)}" ${r.mult <= 0.5 ? "disabled" : ""}>−</button>
+          <span class="step-val" aria-live="polite">${Math.round(r.mult * 100)}%</span>
+          <button type="button" data-step="1" data-slot="${r.slotId}" aria-label="Increase portion of ${escapeHtml(m.name)}" ${r.mult >= 2 ? "disabled" : ""}>+</button>
+        </div>
+      </td>
+      <td class="num" data-label="Calories">${Math.round(s.cal)}</td>
+      <td class="num" data-label="Protein">${Math.round(s.protein)} g</td>
+      <td class="num" data-label="Carbs">${Math.round(s.carbs)} g</td>
+      <td class="num" data-label="Fat">${Math.round(s.fat)} g</td>
+      <td class="cell-actions">
+        <div class="row-actions">
+          <button class="detail-btn" type="button" data-detail="${r.slotId}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg>
+            <span class="sr-only">Details for </span>${m.ingredients.length} items
+          </button>
+          <button class="btn btn-sm swap-btn" type="button" data-swap="${r.slotId}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/></svg>
+            Swap
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  const goalCal = goalOf("calories");
+  const diff = totals.cal - (goalCal?.value || 0);
+  const diffText = !goalCal ? "" : Math.abs(diff) < (goalCal.value * 0.05)
+    ? `right on your ${goalCal.value.toLocaleString()} kcal goal`
+    : diff > 0 ? `${Math.round(diff)} kcal above your goal`
+    : `${Math.round(-diff)} kcal below your goal`;
+
+  foot.innerHTML = `<tr>
+    <th scope="row" style="text-align:left; padding:16px 12px 16px 24px; font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); border-top:2px solid var(--line-strong)">Day total</th>
+    <td colspan="2" style="border-top:2px solid var(--line-strong)"><span class="muted small">${diffText}</span></td>
+    <td class="num" data-label="Calories" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.cal)}</strong></td>
+    <td class="num" data-label="Protein" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.protein)} g</strong></td>
+    <td class="num" data-label="Carbs" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.carbs)} g</strong></td>
+    <td class="num" data-label="Fat" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.fat)} g</strong></td>
+    <td style="border-top:2px solid var(--line-strong)"></td>
+  </tr>`;
+
+  $("#planSummary").textContent = (() => {
+    const n = ensurePlan().rows.filter(r => r.mealId).length;
+    return `${n} ${n === 1 ? "meal or snack" : "meals & snacks"} · ${Math.round(totals.cal).toLocaleString()} kcal estimated`;
+  })();
+}
+
+function labelForDiet(id){
+  const d = DIETS.find(x => x.id === id);
+  return d ? d.label : id;
+}
+
+function portionText(m, mult){
+  const first = m.ingredients[0];
+  const qty = first[1];
+  const match = String(qty).match(/^([\d.]+)\s*(.*)$/);
+  if (!match) return qty;
+  const num = parseFloat(match[1]);
+  const rest = match[2];
+  const scaledNum = num * mult;
+  const pretty = Number.isInteger(scaledNum) ? scaledNum : Math.round(scaledNum * 10) / 10;
+  return `${pretty} ${rest} · ${Math.round(mult * 100)}%`;
+}
+
+function renderLimitMeters(totals){
+  const host = $("#limitMeters");
+  const limits = NUTRIENTS.filter(n => state.goals[n.key].on && state.goals[n.key].mode === "limit");
+  if (!limits.length){
+    host.innerHTML = '<p class="empty-hint">No limits set. Turn on sugar or sodium on the goals screen to watch them here.</p>';
+    return;
+  }
+  host.innerHTML = limits.map(n => {
+    const g = state.goals[n.key];
+    const val = Math.round(totals[n.key]);
+    const pct = clamp((val / Math.max(g.value, 1)) * 100, 0, 100);
+    const over = val > g.value;
+    const within = pct >= 85 && !over;
+    const color = over ? "var(--over)" : within ? "var(--gold)" : "var(--olive)";
+    return `<div style="margin-bottom:14px">
+      <div class="limit-row">
+        <span class="l-name">${n.label}</span>
+        <span class="l-val" style="color:${color}">${val.toLocaleString()} <span style="color:var(--muted); font-weight:600">/ ${g.value.toLocaleString()} ${n.unit}</span></span>
+      </div>
+      <div class="limit-track" role="img" aria-label="${n.label}: ${val} of ${g.value} ${n.unit} limit, ${over ? "over the limit" : `${Math.round(g.value - val)} ${n.unit} remaining`}">
+        <div class="limit-fill" style="width:${pct}%; background:${color}"></div>
+      </div>
+      <div class="limit-caption">${over ? `${(val - g.value).toLocaleString()} ${n.unit} over your limit` : `${Math.round(g.value - val).toLocaleString()} ${n.unit} remaining today`}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderPlan(){
+  const totals = planTotals();
+  const dateEl = $("#planDate");
+  if (dateEl){
+    dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+  }
+  renderRing(totals);
+  renderMacros(totals);
+  renderPlanTable(totals);
+  renderLimitMeters(totals);
+  const tag = $("#dietTag");
+  tag.textContent = state.diets.length
+    ? DIETS.filter(d => state.diets.includes(d.id)).map(d => d.label).join(" · ")
+    : "Balanced";
+  const ann = $("#planAnnounce");
+  if (ann) ann.textContent = `Plan updated: ${Math.round(totals.cal)} calories, ${Math.round(totals.protein)} grams protein, ${ensurePlan().rows.length} meals and snacks.`;
+}
+</script>
+<script>
+"use strict";
+
+/* ============================================================
+   Detail dialog
+   ============================================================ */
+const dlg = $("#detailDialog");
+
+function openDetail(slotId, opts = {}){
+  const plan = ensurePlan();
+  const row = plan.rows.find(r => r.slotId === slotId);
+  const m = row && mealById(row.mealId);
+  if (!row || !m) return;
+  const slot = SLOTS.find(s => s.id === slotId);
+  const s = scaled(m, row.mult);
+  if (!opts.keepFocus) lastFocused = document.activeElement;
+
+  const rows = m.ingredients.map(([name, qty]) => {
+    const numMatch = String(qty).match(/^([\d.]+)\s*(.*)$/);
+    let shown = qty;
+    if (numMatch){
+      const n = parseFloat(numMatch[1]) * row.mult;
+      const pretty = Number.isInteger(n) ? n : Math.round(n * 10) / 10;
+      shown = `${pretty} ${numMatch[2]}`;
+    }
+    return `<div class="ing-row"><span class="ing-name">${escapeHtml(name)}</span><span class="ing-amt">${escapeHtml(shown)}</span></div>`;
+  }).join("");
+
+  const nutri = [
+    ["Calories", Math.round(s.cal), "kcal"],
+    ["Protein", Math.round(s.protein), "g"],
+    ["Carbs", Math.round(s.carbs), "g"],
+    ["Fat", Math.round(s.fat), "g"],
+    ["Fiber", Math.round(s.fiber), "g"],
+    ["Sugar", Math.round(s.sugar), "g"],
+    ["Sodium", Math.round(s.sodium), "mg"],
+  ].map(([label, val, unit]) => `<div class="nm"><b>${val.toLocaleString()}</b><span>${label} ${unit}</span></div>`).join("");
+
+  const conflict = row.mult;
+  dlg.innerHTML = `
+    <div class="dlg-inner">
+      <div class="dlg-head">
+        <span class="emoji-lg" aria-hidden="true">${m.emoji}</span>
+        <div>
+          <h2 id="dlgTitle">${escapeHtml(m.name)}</h2>
+          <p class="dlg-sub">${slot.label} · ${slot.time} · ${Math.round(conflict * 100)}% portion</p>
+        </div>
+        <button class="icon-btn dlg-close" type="button" data-close-dialog aria-label="Close details">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="dlg-body">
+        <div class="dlg-section">
+          <h3>Ingredients &amp; amounts</h3>
+          <div class="ing-list">${rows}</div>
+        </div>
+        <div class="dlg-section">
+          <h3>Estimated nutrition at this portion</h3>
+          <div class="nutri-mini">${nutri}</div>
+        </div>
+        <div class="portion-row">
+          <div>
+            <div class="pr-label">Portion</div>
+            <div class="pr-sub">Adjust how much of this meal you’ll eat.</div>
+          </div>
+          <div class="stepper">
+            <button type="button" data-step="-1" data-slot="${slotId}" aria-label="Reduce portion" ${row.mult <= 0.5 ? "disabled" : ""}>−</button>
+            <span class="step-val" aria-live="polite">${Math.round(row.mult * 100)}%</span>
+            <button type="button" data-step="1" data-slot="${slotId}" aria-label="Increase portion" ${row.mult >= 2 ? "disabled" : ""}>+</button>
+          </div>
+        </div>
+        <p style="font-size:.76rem; color:var(--muted)">Contains: ${m.allergens.length ? m.allergens.join(", ") : "no common allergens"}. Values are approximate.</p>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-sm" type="button" data-close-dialog>Close</button>
+        <span class="spacer"></span>
+        <button class="btn btn-sm btn-primary" type="button" data-swap="${slotId}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/></svg>
+          Try something else
+        </button>
+      </div>
+    </div>`;
+  if (!dlg.open){
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+    const closeBtn = dlg.querySelector(".dlg-close");
+    if (closeBtn) closeBtn.focus();
+  } else if (opts.keepFocus){
+    const active = document.activeElement?.dataset?.step;
+    const nextBtn = dlg.querySelector(`.stepper [data-step="${active}"]`) || dlg.querySelector(".dlg-close");
+    if (nextBtn) nextBtn.focus();
+  }
+}
+
+function closeDialog(){
+  if (typeof dlg.close === "function" && dlg.open) dlg.close();
+  else dlg.removeAttribute("open");
+  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+}
+
+/* ============================================================
+   Swap + portion
+   ============================================================ */
+function swapRow(slotId){
+  const plan = ensurePlan();
+  const row = plan.rows.find(r => r.slotId === slotId);
+  if (!row) return;
+  const current = mealById(row.mealId);
+  const pool = candidatesFor(slotId);
+  if (pool.length < 2 && !current){
+    toast("No alternative fits your current filters.", "info");
+    return;
+  }
+  const alt = pool.filter(m => m.id !== row.mealId);
+  if (!alt.length){
+    toast("That’s the only option that fits — try loosening a filter.", "info");
+    return;
+  }
+  const calGoal = goalOf("calories")?.value || 2000;
+  const slots = enabledSlots();
+  const totalShare = slots.reduce((a, s) => a + s.share, 0);
+  const slot = SLOTS.find(s => s.id === slotId);
+  const target = calGoal * (slot.share / totalShare);
+  alt.sort((a, b) => scoreMeal(a, target, slot) - scoreMeal(b, target, slot));
+  const next = alt[Math.floor(Math.random() * Math.min(alt.length, 3))];
+  row.mealId = next.id;
+  row.mult = bestPortion(next, target);
+
+  const tr = document.querySelector(`tr[data-row="${slotId}"]`);
+  if (tr){
+    tr.classList.remove("row-swap");
+    void tr.offsetWidth;
+    tr.classList.add("row-swap");
+  }
+  if (dlg.open) closeDialog();
+  renderPlan();
+  queueSave();
+  toast(`Swapped in ${next.name}`, "swap");
+}
+
+function stepPortion(slotId, dir){
+  const plan = ensurePlan();
+  const row = plan.rows.find(r => r.slotId === slotId);
+  if (!row) return;
+  row.mult = clamp(Math.round((row.mult + dir * 0.25) * 4) / 4, 0.25, 3);
+  renderPlan();
+  /* keep the detail dialog in sync so portions can be nudged while reading */
+  if (dlg.open) refreshDialogPortion(slotId);
+  queueSave();
+}
+
+function refreshDialogPortion(slotId){
+  const plan = ensurePlan();
+  const row = plan.rows.find(r => r.slotId === slotId);
+  const m = row && mealById(row.mealId);
+  if (!row || !m) return;
+  openDetail(slotId, { keepFocus:true });
+}
+
+/* rescale portions when the calorie target changes, preserving the chosen meals */
+function rescalePortions(){
+  const plan = state.plan;
+  if (!plan) return;
+  const calGoal = goalOf("calories")?.value || 2000;
+  const slots = enabledSlots();
+  const totalShare = slots.reduce((a, s) => a + s.share, 0);
+  for (const r of plan.rows){
+    const m = mealById(r.mealId);
+    const slot = SLOTS.find(s => s.id === r.slotId);
+    if (!m || !slot) continue;
+    r.mult = clamp(Math.round((calGoal * (slot.share / totalShare) / Math.max(m.base.cal, 1)) * 4) / 4, 0.5, 2);
+  }
+}
+
+/* ============================================================
+   Events: setup
+   ============================================================ */
+function bind(){
+  document.addEventListener("click", (e) => {
+    const nav = e.target.closest("[data-go]");
+    if (nav){
+      e.preventDefault();
+      goTo(nav.dataset.go);
+      return;
+    }
+    const modeBtn = e.target.closest("[data-mode]");
+    if (modeBtn){
+      const key = modeBtn.dataset.mode;
+      const g = state.goals[key];
+      g.mode = g.mode === "limit" ? "reach" : "limit";
+      renderGoalFields(key);
+      renderPreview();
+      const again = document.querySelector(`[data-mode="${key}"]`);
+      if (again) again.focus({ preventScroll:true });
+      queueSave();
+      toast(`${labelOf(key)} now ${g.mode === "limit" ? "a limit to stay under" : "a target to reach"}`, "spark");
+      return;
+    }
+    const dietBtn = e.target.closest("[data-diet]");
+    if (dietBtn){
+      const id = dietBtn.dataset.diet;
+      const i = state.diets.indexOf(id);
+      if (i >= 0) state.diets.splice(i, 1);
+      else state.diets.push(id);
+      renderSetup(`[data-diet="${id}"]`);
+      invalidatePlanSilently();
+      queueSave();
+      return;
+    }
+    const rm = e.target.closest("[data-remove-avoid]");
+    if (rm){
+      const i = Number(rm.dataset.removeAvoid);
+      state.avoids.splice(i, 1);
+      renderAvoidList();
+      renderPreview();
+      invalidatePlanSilently();
+      queueSave();
+      return;
+    }
+    const step = e.target.closest("[data-step]");
+    if (step){
+      stepPortion(step.dataset.slot, Number(step.dataset.step));
+      return;
+    }
+    const swap = e.target.closest("[data-swap]");
+    if (swap){
+      swapRow(swap.dataset.swap);
+      return;
+    }
+    const detail = e.target.closest("[data-detail]");
+    if (detail){
+      openDetail(detail.dataset.detail);
+      return;
+    }
+    if (e.target.closest("[data-close-dialog]")){ closeDialog(); return; }
+  });
+
+  /* quantity/goal inputs */
+  $("#goalFields").addEventListener("input", (e) => {
+    const input = e.target.closest("[data-goal]");
+    if (!input) return;
+    const key = input.dataset.goal;
+    const val = clamp(Math.round(Number(input.value) || 0), 0, 20000);
+    state.goals[key].value = val;
+    state.goals[key].on = val > 0;
+    renderPreview();
+    /* goals change totals and comparisons, not the meals already chosen */
+    queueSave();
+  });
+  $("#goalFields").addEventListener("change", (e) => {
+    const input = e.target.closest("[data-goal]");
+    if (!input) return;
+    const key = input.dataset.goal;
+    input.value = state.goals[key].value;
+    if (key === "calories" && state.plan){
+      rescalePortions();
+      if (currentScreen === "plan") renderPlan();
+    }
+    queueSave();
+    toast(`${labelOf(key)} goal set to ${state.goals[key].value.toLocaleString()}${unitOf(key)}`, "check");
+  });
+
+  $("#slotToggles").addEventListener("change", (e) => {
+    const cb = e.target.closest("[data-slot]");
+    if (!cb) return;
+    const id = cb.dataset.slot;
+    if (!cb.checked && SLOTS.filter(s => state.slots[s.id] && s.id !== id).length === 0){
+      cb.checked = true;
+      toast("Keep at least one meal in your day.", "info");
+      return;
+    }
+    state.slots[id] = cb.checked;
+    invalidatePlanSilently();
+    queueSave();
+  });
+
+  $("#addAvoid").addEventListener("click", addAvoid);
+  $("#avoidInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){ e.preventDefault(); addAvoid(); }
+  });
+
+  $("#resetGoals").addEventListener("click", () => {
+    state.goals = defaultState().goals;
+    renderGoalFields();
+    renderPreview();
+    invalidatePlanSilently();
+    queueSave();
+    toast("Goals back to defaults", "check");
+  });
+
+  $("#buildPlan").addEventListener("click", () => {
+    state.seed += 1;
+    state.plan = buildPlan(state.seed);
+    state.plan.sig = filterSignature();
+    save();
+    goTo("plan");
+    toast("Your day is ready", "spark");
+  });
+
+  $("#shufflePlan").addEventListener("click", () => {
+    state.seed += 1;
+    state.plan = buildPlan(state.seed);
+    state.plan.sig = filterSignature();
+    save();
+    renderPlan();
+    toast("Here’s a fresh mix for today", "spark");
+  });
+
+  $("#resetPlan").addEventListener("click", () => {
+    const plan = ensurePlan();
+    plan.rows.forEach(r => {
+      const m = mealById(r.mealId);
+      if (!m) return;
+      const calGoal = goalOf("calories")?.value || 2000;
+      const slots = enabledSlots();
+      const totalShare = slots.reduce((a, s) => a + s.share, 0);
+      const slot = SLOTS.find(s => s.id === r.slotId);
+      r.mult = bestPortion(m, calGoal * (slot.share / totalShare));
+    });
+    save();
+    renderPlan();
+    toast("Portions reset to suggested sizes", "check");
+  });
+
+  $("#printPlan").addEventListener("click", () => window.print());
+
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) closeDialog(); });
+  dlg.addEventListener("close", () => {
+    if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && dlg.open) closeDialog();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){
+      e.preventDefault();
+      $("#avoidInput").focus();
+    }
+  });
+}
+
+function invalidatePlanSilently(){
+  /* mark the current plan as stale so it is rebuilt from the new filters next time it is shown */
+  if (state.plan) state.plan.sig = null;
+}
+
+function addAvoid(){
+  const input = $("#avoidInput");
+  const raw = input.value.trim().replace(/\s+/g, " ");
+  if (!raw) return;
+  if (raw.length > 40){ toast("Keep it short — 40 characters or fewer.", "info"); return; }
+  if (state.avoids.some(a => normalise(a) === normalise(raw))){
+    toast(`“${raw}” is already on your list.`, "info");
+    input.value = "";
+    return;
+  }
+  if (state.avoids.length >= 12){ toast("You can track up to 12 foods.", "info"); return; }
+  state.avoids.push(raw);
+  input.value = "";
+  renderAvoidList();
+  renderPreview();
+  queueSave();
+  invalidatePlanSilently();
+  toast(`We’ll keep ${raw} out`, "check");
+}
+
+function labelOf(key){
+  return (NUTRIENTS.find(n => n.key === key) || {}).label || key;
+}
+function unitOf(key){
+  const u = (NUTRIENTS.find(n => n.key === key) || {}).unit;
+  return u === "kcal" ? " kcal" : ` ${u}`;
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+function init(){
+  ensurePlan();
+  renderSetup();
+  bind();
+  renderPlan();
+  const hash = location.hash.replace("#", "");
+  if (hash === "plan"){
+    const setup = $("#screen-setup");
+    setup.classList.remove("is-active");
+    setup.hidden = true;
+    const planScreen = $("#screen-plan");
+    planScreen.hidden = false;
+    planScreen.classList.add("is-active");
+    currentScreen = "plan";
+    $$(".nav-btn").forEach(b => {
+      if (b.dataset.go === "plan") b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+  }
+  save();
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>
