@@ -1361,14 +1361,17 @@ function totalsForRows(rows){
   return totals;
 }
 function planTotals(){ return totalsForRows(ensurePlan().rows); }
+function formatNutrientAmount(value, unit){
+  const amount=unit==="g"?Math.round(value*10)/10:Math.round(value);
+  return amount.toLocaleString(undefined,{maximumFractionDigits:1});
+}
 function unmetGoals(totals){
   const unmet=[];
-  for (const n of NUTRIENTS){
-    const goal=goalOf(n.key);
-    if(!goal||goal.value<=0)continue;
+  for(const n of NUTRIENTS){
+    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
     const actual=totals[n.key==="calories"?"cal":n.key];
-    if(goal.mode==="reach"&&actual+1e-6<goal.value)unmet.push({key:n.key,text:`${n.label}: ${Math.ceil(goal.value-actual)} ${n.unit} below target`});
-    else if(goal.mode==="limit"&&actual-1e-6>goal.value)unmet.push({key:n.key,text:`${n.label}: ${Math.ceil(actual-goal.value)} ${n.unit} over limit`});
+    if(goal.mode==="reach"&&actual+1e-6<goal.value)unmet.push({key:n.key,text:`${n.label}: ${formatNutrientAmount(goal.value-actual,n.unit)} ${n.unit} below target`});
+    else if(goal.mode==="limit"&&actual-1e-6>goal.value)unmet.push({key:n.key,text:`${n.label}: ${formatNutrientAmount(actual-goal.value,n.unit)} ${n.unit} over limit`});
   }
   return unmet;
 }
@@ -1592,34 +1595,14 @@ function statusClass(kind, val, goal){
 }
 
 function renderMacros(totals){
-  const keys = ["protein","carbs","fat","fiber"];
-  const host = $("#macroGrid");
-  host.innerHTML = keys.map(k => {
-    const n = NUTRIENTS.find(x => x.key === k);
-    const g = goalOf(k);
-    const val = totals[k];
-    if (!g){
-      return `<div class="macro">
-        <div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${Math.round(val)} g</span></div>
-        <div class="m-track" aria-hidden="true"><div class="m-fill under" style="width:0%"></div></div>
-      </div>`;
-    }
-    const pct = clamp((val / Math.max(g.value, 1)) * 100, 0, 100);
-    const cls = statusClass(k, val, g);
-    const remain = g.mode === "limit" ? g.value - val : g.value - val;
-    const caption = g.mode === "limit"
-      ? (remain >= 0 ? `${Math.round(remain)} g left` : `${Math.round(-remain)} g over`)
-      : (remain > 0 ? `${Math.round(remain)} g to go` : `Goal met`);
-    return `<div class="macro">
-      <div class="m-top">
-        <span class="m-name">${n.label}</span>
-        <span class="m-val">${Math.round(val)} <small>/ ${g.value} g</small></span>
-      </div>
-      <div class="m-track" role="img" aria-label="${n.label}: ${Math.round(val)} grams of ${g.value} gram ${g.mode === "limit" ? "limit" : "goal"}, ${caption}">
-        <div class="m-fill ${cls}" style="width:${pct}%"></div>
-      </div>
-      <span class="limit-caption">${caption}</span>
-    </div>`;
+  const keys=["protein","carbs","fat","fiber"],host=$("#macroGrid");
+  host.innerHTML=keys.map(k=>{
+    const n=NUTRIENTS.find(x=>x.key===k),g=goalOf(k),val=totals[k],shown=formatNutrientAmount(val,n.unit);
+    if(!g)return `<div class="macro"><div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${shown} ${n.unit}</span></div><div class="m-track" aria-hidden="true"><div class="m-fill under" style="width:0%"></div></div></div>`;
+    const pct=clamp((val/Math.max(g.value,1))*100,0,100),cls=statusClass(k,val,g),remain=g.value-val;
+    const goalText=formatNutrientAmount(g.value,n.unit),gapText=formatNutrientAmount(Math.abs(remain),n.unit);
+    const caption=g.mode==="limit"?(remain>=0?`${gapText} ${n.unit} left`:`${gapText} ${n.unit} over`):(remain>0?`${gapText} ${n.unit} to go`:"Goal met");
+    return `<div class="macro"><div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${shown} <small>/ ${goalText} ${n.unit}</small></span></div><div class="m-track" role="img" aria-label="${n.label}: ${shown} ${n.unit} of ${goalText} ${n.unit} ${g.mode==="limit"?"limit":"goal"}, ${caption}"><div class="m-fill ${cls}" style="width:${pct}%"></div></div><span class="limit-caption">${caption}</span></div>`;
   }).join("");
 }
 
@@ -1709,9 +1692,9 @@ function renderPlanTable(totals){
     <th scope="row" style="text-align:left; padding:16px 12px 16px 24px; font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); border-top:2px solid var(--line-strong)">Day total</th>
     <td colspan="2" style="border-top:2px solid var(--line-strong)"><span class="muted small">${diffText}</span></td>
     <td class="num" data-label="Calories" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.cal)}</strong></td>
-    <td class="num" data-label="Protein" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.protein)} g</strong></td>
-    <td class="num" data-label="Carbs" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.carbs)} g</strong></td>
-    <td class="num" data-label="Fat" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.fat)} g</strong></td>
+    <td class="num" data-label="Protein" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.protein,"g")} g</strong></td>
+    <td class="num" data-label="Carbs" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.carbs,"g")} g</strong></td>
+    <td class="num" data-label="Fat" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.fat,"g")} g</strong></td>
     <td style="border-top:2px solid var(--line-strong)"></td>
   </tr>`;
 
@@ -1739,29 +1722,13 @@ function portionText(m, mult){
 }
 
 function renderLimitMeters(totals){
-  const host = $("#limitMeters");
-  const limits = NUTRIENTS.filter(n => state.goals[n.key].on && state.goals[n.key].mode === "limit");
-  if (!limits.length){
-    host.innerHTML = '<p class="empty-hint">No limits set. Turn on sugar or sodium on the goals screen to watch them here.</p>';
-    return;
-  }
-  host.innerHTML = limits.map(n => {
-    const g = state.goals[n.key];
-    const val = Math.round(totals[n.key]);
-    const pct = clamp((val / Math.max(g.value, 1)) * 100, 0, 100);
-    const over = val > g.value;
-    const within = pct >= 85 && !over;
-    const color = over ? "var(--over)" : within ? "var(--gold)" : "var(--olive)";
-    return `<div style="margin-bottom:14px">
-      <div class="limit-row">
-        <span class="l-name">${n.label}</span>
-        <span class="l-val" style="color:${color}">${val.toLocaleString()} <span style="color:var(--muted); font-weight:600">/ ${g.value.toLocaleString()} ${n.unit}</span></span>
-      </div>
-      <div class="limit-track" role="img" aria-label="${n.label}: ${val} of ${g.value} ${n.unit} limit, ${over ? "over the limit" : `${Math.round(g.value - val)} ${n.unit} remaining`}">
-        <div class="limit-fill" style="width:${pct}%; background:${color}"></div>
-      </div>
-      <div class="limit-caption">${over ? `${(val - g.value).toLocaleString()} ${n.unit} over your limit` : `${Math.round(g.value - val).toLocaleString()} ${n.unit} remaining today`}</div>
-    </div>`;
+  const host=$("#limitMeters");
+  const limits=NUTRIENTS.filter(n=>state.goals[n.key].on&&state.goals[n.key].mode==="limit");
+  if(!limits.length){host.innerHTML='<p class="empty-hint">No limits set. Turn on sugar or sodium on the goals screen to watch them here.</p>';return}
+  host.innerHTML=limits.map(n=>{
+    const g=state.goals[n.key],actual=totals[n.key],shown=formatNutrientAmount(actual,n.unit),goalText=formatNutrientAmount(g.value,n.unit);
+    const pct=clamp((actual/Math.max(g.value,1))*100,0,100),over=actual>g.value,within=pct>=85&&!over,color=over?"var(--over)":within?"var(--gold)":"var(--olive)",gapText=formatNutrientAmount(Math.abs(g.value-actual),n.unit);
+    return `<div style="margin-bottom:14px"><div class="limit-row"><span class="l-name">${n.label}</span><span class="l-val" style="color:${color}">${shown} <span style="color:var(--muted);font-weight:600">/ ${goalText} ${n.unit}</span></span></div><div class="limit-track" role="img" aria-label="${n.label}: ${shown} of ${goalText} ${n.unit} limit, ${over?"over the limit":`${gapText} ${n.unit} remaining`}"><div class="limit-fill" style="width:${pct}%;background:${color}"></div></div><div class="limit-caption">${over?`${gapText} ${n.unit} over your limit`:`${gapText} ${n.unit} remaining today`}</div></div>`;
   }).join("");
 }
 
