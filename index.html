@@ -1,769 +1,273 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#fbf6ec" />
-<title>Nourish — plan your day around your goals</title>
-<meta name="description" content="Nourish is a warm, simple nutrition planner. Set your daily nutrient goals, note food preferences and allergies, and get a practical day of meals with portions, nutrition totals and easy swaps." />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f2f0e9">
+<title>Nourish — daily meal planner</title>
+<meta name="description" content="Set nutrition goals and food preferences, then build a practical meal plan for the day.">
 <style>
-/* ---------- design tokens ---------- */
 :root{
-  --cream:#fbf6ec;
-  --cream-2:#f5eddf;
-  --card:#fffdf8;
-  --ink:#2d2a22;
-  --ink-soft:#57503f;
-  --muted:#7b7361;
-  --line:#e8dfcd;
-  --line-strong:#d8ccb4;
-  --terra:#c0603a;
-  --terra-dark:#a04b2a;
-  --terra-soft:#f6e3d6;
-  --olive:#5f7a4f;
-  --olive-dark:#4a6340;
-  --olive-soft:#e7edda;
-  --gold:#b68a3a;
-  --berry:#8d4a5c;
-  --sky:#5c7d8c;
-  --ok:#5f7a4f;
-  --warn:#b68a3a;
-  --over:#b1503c;
-  --shadow-sm:0 1px 2px rgba(45,42,34,.05), 0 4px 14px -10px rgba(45,42,34,.35);
-  --shadow-md:0 1px 2px rgba(45,42,34,.05), 0 18px 40px -28px rgba(45,42,34,.45);
-  --radius:20px;
-  --radius-sm:12px;
-  --ease:cubic-bezier(.22,.68,.32,1);
-  --font-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --font-display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  color-scheme:light;
+  --paper:#f2f0e9;--surface:#fffefa;--ink:#202922;--muted:#68716a;
+  --line:#d8ddd5;--line-dark:#b9c2b8;--green:#294f3b;--green-2:#42674f;
+  --green-pale:#e8eee7;--rust:#b75e3f;--rust-pale:#f5e9e1;
+  --gold:#81651f;--gold-pale:#f4efd9;--danger:#a53f34;--danger-pale:#f8e9e5;
+  --serif:Georgia,"Times New Roman",serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 8px 26px rgba(32,41,34,.045);--radius:16px
 }
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
-body{
-  margin:0; min-height:100vh; color:var(--ink); background:var(--cream);
-  font-family:var(--font-body); font-size:16px; line-height:1.6;
-  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  background-image:
-    radial-gradient(1100px 500px at 12% -10%, #fdf2e3 0%, transparent 60%),
-    radial-gradient(900px 480px at 100% 0%, #eef1e2 0%, transparent 55%);
-  background-attachment:fixed;
-}
-h1,h2,h3,h4{margin:0; line-height:1.15; letter-spacing:-.015em; font-family:var(--font-display); font-weight:600}
-p{margin:0}
-button,input,select,textarea{font:inherit; color:inherit}
-a{color:var(--olive-dark)}
-img,svg{display:block; max-width:100%}
-::selection{background:var(--terra-soft); color:var(--terra-dark)}
-:focus-visible{outline:2.5px solid var(--olive); outline-offset:3px; border-radius:6px}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.skip-link{
-  position:absolute; left:12px; top:-60px; z-index:100; background:var(--ink); color:var(--cream);
-  padding:10px 16px; border-radius:10px; text-decoration:none; transition:top .2s var(--ease);
-}
-.skip-link:focus{top:12px}
-
-/* ---------- ambient decoration ---------- */
-.ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
-.blob{position:absolute; border-radius:50%; filter:blur(46px); opacity:.5; animation:drift 22s var(--ease) infinite alternate}
-.blob.b1{width:340px;height:340px;background:#f7ddc6;top:-90px;left:-60px}
-.blob.b2{width:300px;height:300px;background:#e6ecd6;top:34%;right:-110px;animation-delay:-7s}
-.blob.b3{width:260px;height:260px;background:#f6e7d3;bottom:-90px;left:28%;animation-delay:-13s}
-@keyframes drift{
-  0%{transform:translate3d(0,0,0) scale(1)}
-  50%{transform:translate3d(18px,-22px,0) scale(1.06)}
-  100%{transform:translate3d(-14px,16px,0) scale(.97)}
-}
-
-/* ---------- app frame ---------- */
-.app{position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column}
-.topbar{
-  position:sticky; top:0; z-index:30;
-  background:rgba(251,246,236,.82);
-  -webkit-backdrop-filter:blur(14px) saturate(1.1); backdrop-filter:blur(14px) saturate(1.1);
-  border-bottom:1px solid rgba(232,223,205,.9);
-}
-.topbar-inner{max-width:1160px; margin:0 auto; padding:12px 22px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
-.brand{display:flex; align-items:center; gap:11px; text-decoration:none; color:var(--ink); border-radius:12px}
-.brand-mark{
-  width:40px; height:40px; border-radius:13px; display:grid; place-items:center;
-  background:linear-gradient(145deg,#6c8759,#4d6540); color:#f7f3e6;
-  box-shadow:0 6px 16px -10px rgba(74,99,64,.9);
-  transition:transform .45s var(--ease);
-}
-.brand:hover .brand-mark{transform:rotate(-6deg) scale(1.05)}
-.brand-mark svg{width:22px;height:22px}
-.brand-text{display:grid; line-height:1.15}
-.brand-text strong{font-family:var(--font-display); font-size:1.18rem; font-weight:600; letter-spacing:-.01em}
-.brand-text span{font-size:.72rem; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; font-weight:600}
-.nav{margin-left:auto; display:flex; gap:4px; padding:4px; background:rgba(245,237,223,.75); border:1px solid var(--line); border-radius:999px}
-.nav-btn{
-  border:0; background:transparent; color:var(--ink-soft); cursor:pointer;
-  padding:8px 16px; border-radius:999px; font-size:.88rem; font-weight:600; white-space:nowrap;
-  transition:background .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
-}
-.nav-btn:hover{background:rgba(255,253,248,.9); color:var(--ink)}
-.nav-btn[aria-current="page"]{background:var(--ink); color:var(--cream); box-shadow:var(--shadow-sm)}
-.nav-btn:active{transform:scale(.97)}
-
-.shell{flex:1; width:100%; max-width:1160px; margin:0 auto; padding:34px 22px 72px}
-.screen{display:none}
-.screen.is-active{display:block}
-.screen.is-leaving{display:none}
-@media (prefers-reduced-motion:no-preference){
-  .screen.is-entering{animation:screenIn .5s var(--ease) both}
-  @keyframes screenIn{
-    from{opacity:0; transform:translateY(14px)}
-    to{opacity:1; transform:none}
-  }
-}
-
-/* ---------- headings + cards ---------- */
-.page-head{margin-bottom:26px; max-width:68ch}
-.kicker{
-  display:inline-flex; align-items:center; gap:8px; font-size:.72rem; font-weight:700;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--olive-dark); margin-bottom:10px;
-}
-.kicker::before{content:""; width:22px; height:2px; border-radius:2px; background:var(--terra); opacity:.7}
-.page-head h1{font-size:clamp(1.9rem,4.2vw,2.75rem); color:var(--ink)}
-.page-head .lede{margin-top:10px; color:var(--ink-soft); font-size:1.02rem; max-width:62ch}
-.card{
-  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-  box-shadow:var(--shadow-sm); padding:24px;
-}
-.card + .card{margin-top:18px}
-.card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px}
-.card-head h2{font-size:1.28rem}
-.card-head p{color:var(--muted); font-size:.88rem; margin-top:3px}
-
-/* ---------- buttons ---------- */
-.btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  border:1px solid var(--line-strong); background:var(--card); color:var(--ink);
-  padding:11px 18px; border-radius:999px; font-size:.9rem; font-weight:650; cursor:pointer;
-  transition:background .22s var(--ease), border-color .22s var(--ease), transform .18s var(--ease), box-shadow .22s var(--ease), color .22s var(--ease);
-}
-.btn:hover{background:var(--cream-2); border-color:#c9bb9f; transform:translateY(-1px); box-shadow:var(--shadow-sm)}
-.btn:active{transform:translateY(0) scale(.985)}
-.btn svg{width:17px; height:17px}
-.btn-primary{
-  background:linear-gradient(145deg,#cb6a42,var(--terra) 55%,#ab5330);
-  border-color:transparent; color:#fff8f1;
-  box-shadow:0 10px 22px -14px rgba(160,75,42,.95);
-}
-.btn-primary:hover{background:linear-gradient(145deg,#d2764d,var(--terra-dark)); color:#fff; box-shadow:0 14px 26px -14px rgba(160,75,42,.85)}
-.btn-ghost{background:transparent; border-color:transparent; color:var(--ink-soft)}
-.btn-ghost:hover{background:rgba(232,223,205,.5); border-color:transparent}
-.btn-sm{padding:6px 12px; font-size:.8rem; gap:5px}
-.btn-sm svg{width:14px;height:14px}
-.btn[disabled]{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none}
-.icon-btn{
-  width:34px; height:34px; display:grid; place-items:center; border-radius:10px;
-  border:1px solid var(--line-strong); background:var(--card); cursor:pointer; color:var(--ink-soft);
-  transition:background .2s, border-color .2s, transform .15s;
-}
-.icon-btn:hover{background:var(--cream-2); border-color:#c9bb9f}
-.icon-btn:active{transform:scale(.94)}
-.icon-btn svg{width:16px;height:16px}
-.icon-btn[disabled]{opacity:.35; cursor:not-allowed}
-
-/* ---------- forms ---------- */
-.field{display:grid; gap:6px}
-.field label,.field-label{font-size:.8rem; font-weight:650; color:var(--ink-soft); letter-spacing:.01em}
-.field .hint{font-size:.76rem; color:var(--muted)}
-input[type=text],input[type=number],input[type=search]{width:100%; background:#fffefb; border:1.5px solid var(--line-strong); border-radius:12px; padding:10px 13px; font-size:.95rem; transition:border-color .2s, box-shadow .2s, background .2s}
-input::placeholder{color:#a89e8a}
-input:focus{outline:none; border-color:var(--olive); box-shadow:0 0 0 4px rgba(95,122,79,.14); background:#fff}
-input[type=number]{font-variant-numeric:tabular-nums}
-.num-wrap{position:relative; display:flex; align-items:center}
-.num-wrap input{padding-right:52px}
-.num-wrap .unit{position:absolute; right:12px; font-size:.74rem; font-weight:700; color:var(--muted); letter-spacing:.04em; pointer-events:none}
-.toggle-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px dashed var(--line)}
-.toggle-row:last-child{border-bottom:0}
-.toggle-row .t-label{font-size:.9rem; font-weight:600}
-.toggle-row .t-sub{font-size:.78rem; color:var(--muted)}
-
-/* switch */
-.switch{position:relative; display:inline-flex; flex:0 0 auto; width:46px; height:27px}
-.switch input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer}
-.switch .track{
-  position:absolute; inset:0; border-radius:999px; background:#e2d8c4; border:1px solid var(--line-strong);
-  transition:background .28s var(--ease), border-color .28s var(--ease); pointer-events:none;
-}
-.switch .thumb{
-  position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%; background:#fff;
-  box-shadow:0 1px 3px rgba(45,42,34,.28); transition:transform .32s var(--ease); pointer-events:none;
-}
-.switch input:checked ~ .track{background:var(--olive); border-color:var(--olive)}
-.switch input:checked ~ .thumb{transform:translateX(19px)}
-.switch input:focus-visible ~ .track{outline:2.5px solid var(--olive); outline-offset:3px}
-
-/* chips + pills */
-.chip-set{display:flex; flex-wrap:wrap; gap:8px}
-.chip{
-  position:relative; display:inline-flex; align-items:center; gap:7px;
-  border:1.5px solid var(--line-strong); background:var(--card); color:var(--ink-soft);
-  padding:7px 14px; border-radius:999px; font-size:.83rem; font-weight:600; cursor:pointer;
-  transition:background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease), transform .18s var(--ease);
-}
-.chip:hover{border-color:#c3b394; color:var(--ink); transform:translateY(-1px)}
-.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--cream)}
-.chip[aria-pressed="true"] .chip-dot{background:var(--terra-soft)}
-.chip-dot{width:7px; height:7px; border-radius:50%; background:currentColor; opacity:.55}
-.chip:active{transform:scale(.97)}
-.tag{
-  display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
-  font-size:.71rem; font-weight:700; letter-spacing:.03em; background:var(--cream-2); color:var(--ink-soft);
-  border:1px solid var(--line);
-}
-.tag.green{background:var(--olive-soft); color:var(--olive-dark); border-color:#d3dec2}
-.tag.terra{background:var(--terra-soft); color:var(--terra-dark); border-color:#efd2c1}
-.tag.gold{background:#f7eed8; color:#8a6620; border-color:#ecdcba}
-
-/* saved chip row */
-.avoid-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
-.avoid-pill{
-  display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 13px; border-radius:999px;
-  background:var(--terra-soft); border:1px solid #efd2c1; color:var(--terra-dark);
-  font-size:.82rem; font-weight:650; animation:popIn .28s var(--ease) both;
-}
-.avoid-pill button{
-  width:20px; height:20px; border-radius:50%; border:0; background:rgba(160,75,42,.12);
-  color:inherit; cursor:pointer; display:grid; place-items:center; transition:background .2s, transform .15s;
-}
-.avoid-pill button:hover{background:rgba(160,75,42,.25)}
-.avoid-pill button:active{transform:scale(.9)}
-.avoid-pill svg{width:11px; height:11px}
-@keyframes popIn{from{opacity:0; transform:scale(.85)} to{opacity:1; transform:none}}
-
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important}
-}
-
-/* ---------- goals layout ---------- */
-.setup-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:20px; align-items:start}
-@media (max-width:900px){.setup-grid{grid-template-columns:1fr}}
-.nutrient-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 16px}
-@media (max-width:560px){.nutrient-grid{grid-template-columns:1fr}}
-.nutrient{display:grid; gap:6px}
-.nutrient .n-head{display:flex; align-items:center; justify-content:space-between; gap:8px}
-.nutrient .n-name{font-size:.86rem; font-weight:650; display:flex; align-items:center; gap:7px}
-.nutrient .dot{width:8px; height:8px; border-radius:50%; background:var(--olive)}
-.nutrient .n-mode{font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted)}
-.nutrient input.changed{animation:fieldPulse .6s var(--ease)}
-@keyframes fieldPulse{
-  0%{box-shadow:0 0 0 0 rgba(192,96,58,.35); border-color:var(--terra)}
-  100%{box-shadow:0 0 0 9px rgba(192,96,58,0); border-color:var(--line-strong)}
-}
-.subhead{display:flex; align-items:center; gap:10px; margin:26px 0 12px; font-size:.74rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
-.subhead::after{content:""; flex:1; height:1px; background:var(--line)}
-
-/* live preview panel */
-.preview-card{position:sticky; top:88px; display:grid; gap:16px; overflow:hidden}
-@media (max-width:900px){.preview-card{position:static}}
-.preview-card .p-glow{position:absolute; inset:-40% -30% auto auto; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,#f8e3cf,transparent 70%); pointer-events:none}
-.preview-title{font-size:1.02rem; font-weight:700; position:relative; display:flex; align-items:center; gap:8px}
-.preview-title svg{width:17px;height:17px;color:var(--terra)}
-.preview-stat{display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line)}
-.preview-stat:last-of-type{border-bottom:0}
-.preview-stat .ps-label{font-size:.82rem; color:var(--ink-soft); font-weight:600}
-.preview-stat .ps-value{font-size:1.02rem; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
-.mini-bar{height:6px; border-radius:999px; background:var(--cream-2); overflow:hidden; margin-top:5px}
-.mini-bar > i{display:block; height:100%; width:0; border-radius:999px; background:var(--olive); transition:width .7s var(--ease), background .3s}
-.preview-note{display:flex; gap:8px; align-items:flex-start; padding:11px 12px; background:var(--cream-2); border-radius:12px; font-size:.78rem; color:var(--ink-soft); line-height:1.5}
-.preview-note svg{width:15px;height:15px;color:var(--olive-dark); flex:0 0 auto; margin-top:2px}
-.avoid-input-row{display:flex; gap:8px; margin-top:10px}
-.avoid-input-row input{flex:1}
-.empty-hint{font-size:.8rem; color:var(--muted); font-style:italic}
-
-/* ---------- plan summary ---------- */
-.plan-top{display:grid; grid-template-columns:minmax(280px,.95fr) minmax(0,1.6fr); gap:18px; margin-bottom:20px; align-items:stretch}
-@media (max-width:900px){.plan-top{grid-template-columns:1fr}}
-.cal-card{display:flex; align-items:center; gap:22px; padding:22px}
-.ring-wrap{position:relative; width:132px; height:132px; flex:0 0 auto}
-.ring-wrap svg{transform:rotate(-90deg); width:132px; height:132px}
-.ring-bg{fill:none; stroke:#efe6d5; stroke-width:11}
-.ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:11; stroke-linecap:round; stroke-dasharray:339.3; stroke-dashoffset:339.3; transition:stroke-dashoffset 1s var(--ease), stroke .4s}
-.ring-center{position:absolute; inset:0; display:grid; place-content:center; text-align:center; line-height:1.1}
-.ring-center strong{font-size:1.6rem; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
-.ring-center span{font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-top:4px}
-.cal-meta{display:grid; gap:4px; min-width:0}
-.cal-meta .cm-title{font-size:.74rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
-.cal-meta .cm-value{font-size:1.55rem; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
-.cal-meta .cm-sub{font-size:.84rem; color:var(--ink-soft)}
-.cal-meta .cm-sub b{color:var(--ink)}
-.macro-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 18px; padding:22px}
-@media (max-width:520px){.macro-grid{grid-template-columns:1fr}}
-.macro{display:grid; gap:5px}
-.macro .m-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:.82rem}
-.macro .m-name{font-weight:650; color:var(--ink-soft); display:flex; align-items:center; gap:6px}
-.macro .m-val{font-variant-numeric:tabular-nums; font-weight:700; font-size:.86rem}
-.macro .m-val small{font-weight:600; color:var(--muted); font-size:.78rem}
-.macro .m-track{height:7px; border-radius:999px; background:var(--cream-2); overflow:hidden}
-.macro .m-fill{height:100%; width:0; border-radius:999px; transition:width .8s var(--ease), background .3s}
-.macro .m-fill.good{background:var(--olive)}
-.macro .m-fill.near{background:var(--gold)}
-.macro .m-fill.over{background:var(--over)}
-.macro .m-fill.under{background:#c9bb9f}
-.plan-compliance{border:1px solid var(--line);border-radius:16px;padding:15px 18px;background:var(--card);box-shadow:var(--shadow-sm);margin-bottom:18px}
-.plan-compliance strong{display:block;font-size:.94rem;margin-bottom:4px}
-.plan-compliance p{font-size:.84rem;color:var(--ink-soft)}
-.plan-compliance.is-success{border-color:#cddbbd;background:#f5f8ef}
-.plan-compliance.is-warning{border-color:#e8c8a4;background:#fff8ed}
-.plan-compliance ul{margin:8px 0 0;padding-left:22px;font-size:.82rem;color:var(--ink-soft)}
-.plan-compliance li+li{margin-top:2px}
-
-/* ---------- plan table ---------- */
-.plan-card{padding:0; overflow:hidden}
-.plan-card-head{padding:22px 24px 0}
-.table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch}
-.plan-table{width:100%; border-collapse:collapse; min-width:760px}
-.plan-table caption{text-align:left; padding:0 0 12px; color:var(--muted); font-size:.84rem}
-.plan-table thead th{
-  text-align:left; font-size:.7rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
-  font-weight:700; padding:12px 12px; border-bottom:1px solid var(--line); background:var(--cream);
-  position:sticky; top:0; z-index:1;
-}
-.plan-table thead th:first-child{padding-left:24px}
-.plan-table thead th:last-child{padding-right:24px; text-align:right}
-.plan-table thead th.num{text-align:right}
-.plan-table tbody tr{transition:background .25s}
-.plan-table tbody tr:hover{background:#fdfaf2}
-.plan-table td{padding:15px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-size:.9rem}
-.plan-table td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
-.plan-table td:first-child{padding-left:24px}
-.plan-table td:last-child{padding-right:24px; text-align:right}
-.meal-slot{display:grid; gap:2px; min-width:88px}
-.meal-slot .slot-name{font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--terra-dark)}
-.meal-slot .slot-time{font-size:.75rem; color:var(--muted)}
-.meal-name{font-weight:650; font-size:.94rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-.meal-name .emoji{font-size:1.05rem}
-.meal-desc{font-size:.8rem; color:var(--muted); margin-top:3px; max-width:42ch}
-.meal-tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
-.portion-cell{display:grid; gap:6px; min-width:104px}
-.portion-label{font-size:.78rem; color:var(--muted); font-variant-numeric:tabular-nums}
-.stepper{display:inline-flex; align-items:center; gap:2px; border:1px solid var(--line-strong); border-radius:999px; background:var(--card); padding:2px}
-.stepper button{
-  width:26px; height:26px; border:0; border-radius:50%; background:transparent; cursor:pointer;
-  display:grid; place-items:center; color:var(--ink-soft); font-size:1rem; line-height:1;
-  transition:background .18s, transform .15s;
-}
-.stepper button:hover{background:var(--cream-2); color:var(--ink)}
-.stepper button:active{transform:scale(.9)}
-.stepper button[disabled]{opacity:.3; cursor:not-allowed}
-.stepper .step-val{min-width:40px; text-align:center; font-size:.78rem; font-weight:700; font-variant-numeric:tabular-nums}
-.row-actions{display:inline-flex; gap:6px; justify-content:flex-end}
-.detail-btn{border:0; background:transparent; color:var(--ink-soft); cursor:pointer; padding:7px 9px; border-radius:9px; display:inline-flex; align-items:center; gap:5px; font-size:.79rem; font-weight:650; transition:background .2s,color .2s}
-.detail-btn:hover{background:var(--cream-2); color:var(--ink)}
-.detail-btn svg{width:14px;height:14px}
-.swap-btn{white-space:nowrap}
-@media (prefers-reduced-motion:no-preference){
-  .plan-table tbody tr.row-in{animation:rowIn .55s var(--ease) both}
-  .plan-table tbody tr.row-swap{animation:rowSwap .5s var(--ease)}
-  @keyframes rowIn{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
-  @keyframes rowSwap{
-    0%{opacity:1; transform:none}
-    35%{opacity:.2; transform:translateX(-10px)}
-    62%{opacity:.4; transform:translateX(8px)}
-    100%{opacity:1; transform:none}
-  }
-}
-.plan-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:18px 24px; background:var(--cream); border-top:1px solid var(--line)}
-.plan-actions .spacer{flex:1}
-.save-state{font-size:.79rem; color:var(--muted); display:inline-flex; align-items:center; gap:6px}
-.save-state .pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--olive);box-shadow:0 0 0 0 rgba(95,122,79,.55); animation:dotPulse 2.4s infinite}
-@keyframes dotPulse{0%{box-shadow:0 0 0 0 rgba(95,122,79,.5)}70%{box-shadow:0 0 0 7px rgba(95,122,79,0)}100%{box-shadow:0 0 0 0 rgba(95,122,79,0)}}
-
-/* limit meters */
-.limit-row{display:flex; justify-content:space-between; gap:10px; font-size:.84rem; padding:8px 0}
-.limit-row .l-name{font-weight:650; color:var(--ink-soft)}
-.limit-row .l-val{font-variant-numeric:tabular-nums; font-weight:700}
-.limit-track{position:relative; height:8px; border-radius:999px; background:var(--cream-2); overflow:hidden}
-.limit-track .limit-fill{position:absolute; inset:0 auto 0 0; border-radius:999px; background:var(--olive); width:0; transition:width .8s var(--ease), background .3s}
-.limit-track .limit-mark{position:absolute; top:-2px; bottom:-2px; width:2px; background:rgba(45,42,34,.35); left:100%; transform:translateX(-2px)}
-.limit-caption{font-size:.75rem; color:var(--muted); margin-top:4px}
-
-/* ---------- disclaimer + footer ---------- */
-.disclaimer{
-  display:flex; gap:12px; align-items:flex-start; margin-top:24px; padding:16px 18px;
-  background:rgba(255,253,248,.75); border:1px dashed var(--line-strong); border-radius:var(--radius-sm);
-  font-size:.82rem; color:var(--ink-soft); line-height:1.55;
-}
-.disclaimer svg{width:18px; height:18px; flex:0 0 auto; color:var(--gold); margin-top:1px}
-.disclaimer b{color:var(--ink)}
-.site-footer{max-width:1160px; margin:0 auto; padding:0 22px 34px; color:var(--muted); font-size:.78rem; display:flex; gap:14px; flex-wrap:wrap; justify-content:space-between; border-top:1px solid var(--line); padding-top:18px}
-.site-footer a{color:var(--ink-soft)}
-
-/* ---------- dialog / drawer ---------- */
-dialog.detail-dialog{
-  border:0; padding:0; background:transparent; max-width:min(560px,calc(100vw - 28px)); width:100%;
-  max-height:min(88vh,860px); margin:auto; overflow:visible; color:var(--ink);
-}
-dialog.detail-dialog::backdrop{background:rgba(45,42,34,.4); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px)}
-dialog.detail-dialog[open]{animation:dialogIn .34s var(--ease)}
-dialog.detail-dialog::backdrop{animation:fadeIn .3s var(--ease)}
-@keyframes dialogIn{from{opacity:0; transform:translateY(18px) scale(.97)} to{opacity:1; transform:none}}
-@keyframes fadeIn{from{opacity:0} to{opacity:1}}
-.dlg-inner{background:var(--card); border-radius:24px; box-shadow:0 30px 70px -30px rgba(45,42,34,.6); overflow:hidden; display:flex; flex-direction:column; max-height:min(88vh,860px)}
-.dlg-head{padding:22px 24px 16px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:14px}
-.dlg-head .emoji-lg{font-size:1.9rem; line-height:1}
-.dlg-head h2{font-size:1.3rem}
-.dlg-head .dlg-sub{font-size:.83rem; color:var(--muted); margin-top:2px}
-.dlg-close{margin-left:auto; flex:0 0 auto}
-.dlg-body{padding:20px 24px; overflow:auto; display:grid; gap:20px}
-.dlg-section h3{font-family:var(--font-body); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; font-weight:700}
-.ing-list{display:grid; gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden}
-.ing-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; font-size:.87rem; border-bottom:1px solid var(--line); background:#fffefb}
-.ing-row:last-child{border-bottom:0}
-.ing-row:nth-child(even){background:#fdfaf3}
-.ing-row .ing-name{font-weight:600}
-.ing-row .ing-amt{color:var(--muted); font-variant-numeric:tabular-nums; font-size:.83rem}
-.nutri-mini{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px}
-.nutri-mini .nm{background:var(--cream-2); border-radius:12px; padding:10px 12px; text-align:center}
-.nutri-mini .nm b{display:block; font-size:1rem; font-variant-numeric:tabular-nums}
-.nutri-mini .nm span{font-size:.68rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:700}
-.portion-row{display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--cream); border:1px solid var(--line); padding:12px 14px; border-radius:14px; flex-wrap:wrap}
-.portion-row .pr-label{font-size:.85rem; font-weight:650}
-.portion-row .pr-sub{font-size:.76rem; color:var(--muted)}
-.dlg-foot{padding:16px 24px 20px; border-top:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap; background:var(--cream)}
-.dlg-foot .spacer{flex:1}
-
-/* ---------- toast ---------- */
-.toast-stack{position:fixed; z-index:80; left:50%; bottom:24px; transform:translateX(-50%); display:grid; gap:8px; width:max-content; max-width:calc(100vw - 32px)}
-.toast{
-  display:flex; align-items:center; gap:10px; background:rgba(45,42,34,.96); color:#f8f2e5;
-  padding:12px 18px; border-radius:999px; font-size:.86rem; font-weight:550; box-shadow:0 18px 40px -18px rgba(0,0,0,.6);
-  animation:toastIn .38s var(--ease) both;
-}
-.toast svg{width:16px;height:16px;color:#cfe0b9;flex:0 0 auto}
-.toast.leaving{animation:toastOut .32s var(--ease) both}
-@keyframes toastIn{from{opacity:0; transform:translateY(16px) scale(.96)} to{opacity:1; transform:none}}
-@keyframes toastOut{to{opacity:0; transform:translateY(10px) scale(.97)}}
-
-@media (max-width:720px){
-  .shell{padding:24px 16px 56px}  .topbar-inner{padding:10px 16px}
-  .nav{width:100%; margin-left:0; justify-content:space-between}
-  .nav-btn{flex:1; padding:9px 8px; font-size:.84rem}
-  .card{padding:20px 18px}
-  .cal-card{flex-direction:column; align-items:flex-start; gap:14px}
-  .plan-table{min-width:0}
-  .plan-table thead{display:none}
-  .plan-table, .plan-table tbody, .plan-table tr, .plan-table td{display:block; width:100%}
-  .plan-table tbody tr{
-    border-bottom:1px solid var(--line); padding:16px 18px; display:grid;
-    grid-template-columns:1fr 1fr; gap:10px 14px;
-  }
-  .plan-table tbody tr:hover{background:transparent}
-  .plan-table td{border:0; padding:0; font-size:.88rem}
-  .plan-table td:first-child, .plan-table td:last-child{padding:0}
-  .plan-table td.cell-meal{grid-column:1 / -1}
-  .plan-table td.cell-slot{grid-column:1 / -1; padding-bottom:2px}
-  .plan-table td.num{text-align:left; display:flex; justify-content:space-between; gap:8px}
-  .plan-table td.num::before{content:attr(data-label); font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700}
-  .plan-table td.cell-actions{grid-column:1 / -1; text-align:left; margin-top:2px}
-  .plan-table tfoot tr{display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; padding:16px 18px; background:var(--cream)}
-  .plan-table tfoot th{grid-column:1 / -1; padding:0 !important; font-size:.72rem !important}
-  .row-actions{justify-content:flex-start; flex-wrap:wrap}
-  .meal-slot{display:flex; align-items:baseline; gap:8px}
-  .portion-cell{grid-column:1 / -1}
-  .dlg-body{padding:16px 18px}
-  .dlg-head,.dlg-foot{padding-left:18px; padding-right:18px}
-  .nutri-mini{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .stepper button{width:34px; height:34px; font-size:1.15rem}
-  .stepper .step-val{min-width:46px; font-size:.82rem}
-  .detail-btn{padding:8px 10px; min-height:36px}
-}
-
-/* ---------- print ---------- */
-@media print{
-  body{background:#fff; color:#000; font-size:11pt}
-  .ambient,.topbar,.site-footer,.toast-stack,.plan-actions .btn,.plan-actions .save-state,
-  .screen#screen-setup,.skip-link,dialog{display:none !important}
-  .shell{padding:0; max-width:none}
-  .page-head{margin-bottom:12pt}
-  .page-head .btn,.page-head .lede{display:none}
-  .card{box-shadow:none; border:1px solid #ddd; break-inside:avoid; margin-bottom:10pt}
-  .plan-card{padding:0}
-  .plan-table{min-width:0; font-size:9.5pt}
-  .plan-table thead th{background:#f4f4f4; color:#000}
-  .plan-table td,.plan-table thead th{padding:6pt 5pt}
-  .stepper,.row-actions,.chip-set,.tag.terra{display:none}
-  .ring-fg{stroke:#555 !important}
-  .mini-bar,.m-fill,.limit-fill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-  a[href]::after{content:""}
-}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:3px solid #ba795d;outline-offset:3px}
+::selection{background:#dce7dc}
+.page{max-width:1320px;margin:0 auto;padding:0 28px 48px}
+.site-head{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);margin-bottom:34px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.brand-mark{width:34px;height:34px;border:1.5px solid var(--green);border-radius:50%;display:grid;place-items:center;color:var(--green);font-family:var(--serif);font-size:19px;line-height:1}
+.brand-name{font:600 18px/1 var(--serif);letter-spacing:-.02em}
+.brand-note{color:var(--muted);font-size:12px}
+.head-date{color:var(--muted);font-size:13px}
+.intro{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:26px}
+.eyebrow{margin:0 0 7px;color:var(--green-2);font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}
+h1,h2,h3,p{margin-top:0}
+h1{font:500 clamp(32px,4vw,49px)/1.08 var(--serif);letter-spacing:-.04em;margin:0}
+.intro-copy{max-width:500px;color:var(--muted);margin:9px 0 0}
+.intro-actions{display:flex;gap:9px;align-items:center;flex-shrink:0}
+.button{border:1px solid var(--line-dark);border-radius:8px;background:var(--surface);padding:10px 15px;font-weight:650;font-size:13px;transition:background .16s,border-color .16s,transform .16s}
+.button:hover{background:#f7f8f4;border-color:#89968b}
+.button:active{transform:translateY(1px)}
+.button-primary{background:var(--green);border-color:var(--green);color:white}
+.button-primary:hover{background:#1f4030;border-color:#1f4030}
+.button[disabled]{opacity:.45;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:22px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.settings{padding:22px;position:sticky;top:18px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
+.section-title h2{font:600 21px/1.15 var(--serif);letter-spacing:-.02em;margin:0}
+.section-title small{color:var(--muted);font-size:11px}
+.field-label{display:block;font-size:12px;font-weight:700;color:#414d44;margin-bottom:8px}
+.targets{display:grid;gap:8px}
+.target{display:grid;grid-template-columns:16px minmax(80px,1fr) 86px 94px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #edf0eb}
+.target:last-child{border-bottom:0}
+.target input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);margin:0}
+.target-name{font-size:12px;font-weight:650}
+.target input[type=number],.target select,.avoid-input{width:100%;height:35px;border:1px solid var(--line);border-radius:7px;background:#fff;padding:0 8px;font-size:12px}
+.target input[type=number]{font-variant-numeric:tabular-nums}
+.target select{padding:0 5px}
+.unit-label{position:relative}
+.unit-label span{position:absolute;right:7px;top:9px;color:var(--muted);font-size:10px;pointer-events:none}
+.target input[type=number]{padding-right:25px}
+.rule{border:0;border-top:1px solid var(--line);margin:19px 0}
+.control-group{margin-top:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line-dark);background:#fff;border-radius:999px;padding:6px 10px;font-size:11px;color:#4f5b52;transition:.15s}
+.chip:hover{border-color:var(--green-2)}
+.chip[aria-pressed=true]{background:var(--green);border-color:var(--green);color:white}
+.chip:focus-visible{border-radius:999px}
+.group-note{margin:7px 0 0;color:var(--muted);font-size:11px}
+.avoid-row{display:grid;grid-template-columns:1fr auto;gap:7px}
+.avoid-input{height:38px;font-size:13px;padding:0 10px}
+.avoid-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.avoid-item{display:inline-flex;align-items:center;gap:6px;padding:4px 7px 4px 10px;border-radius:999px;background:var(--rust-pale);color:#7c3927;font-size:11px}
+.avoid-item button{width:19px;height:19px;padding:0;border:0;border-radius:50%;background:transparent;color:inherit;font-size:15px;line-height:1}
+.slot-list{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px}
+.slot-option{display:flex;gap:7px;align-items:center;color:#465149;font-size:12px}
+.slot-option input{accent-color:var(--green)}
+.settings-foot{margin-top:19px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.results{min-width:0}
+.summary{display:grid;grid-template-columns:1.2fr repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-height:86px}
+.stat-label{display:block;color:var(--muted);font-size:11px;font-weight:650;letter-spacing:.03em}
+.stat-value{display:block;margin-top:5px;font-size:23px;font-weight:650;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.stat-value small{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0}
+.status{padding:13px 16px;border-radius:10px;margin-bottom:14px;font-size:12px;animation:appear .22s ease-out}
+.status strong{display:block;font-size:13px;margin-bottom:2px}
+.status p{margin:0;color:inherit}
+.status ul{margin:6px 0 0;padding-left:18px}
+.status-good{background:var(--green-pale);border:1px solid #cfdbcf;color:#294b35}
+.status-warn{background:var(--gold-pale);border:1px solid #e3d8aa;color:#624d1d}
+.status-stale{background:#ecece8;border:1px solid var(--line);color:#4f5850}
+.plan-panel{overflow:hidden}
+.plan-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:20px 22px 16px}
+.plan-head h2{font:600 22px/1.1 var(--serif);margin:0;letter-spacing:-.02em}
+.plan-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.plan-actions{display:flex;align-items:center;gap:7px}
+.table-wrap{overflow:auto;border-top:1px solid var(--line)}
+table{width:100%;min-width:840px;border-collapse:collapse}
+caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+thead th{padding:10px 11px;background:#f6f6f1;color:#6c756d;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--line)}
+thead th:first-child,tbody td:first-child,tfoot th:first-child{padding-left:22px}
+thead th:last-child,tbody td:last-child,tfoot td:last-child{padding-right:22px}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{border-bottom:1px solid #e9ede7;transition:background .15s}
+tbody tr:hover{background:#fbfcf8}
+tbody td{padding:14px 11px;vertical-align:top;font-size:12px}
+.time{font-size:10px;color:var(--muted);white-space:nowrap}
+.meal-title{font-weight:700;font-size:13px;line-height:1.3}
+.meal-sub{margin-top:4px;color:var(--muted);font-size:11px;max-width:430px}
+.meal-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.tag{border:1px solid var(--line);border-radius:999px;padding:2px 6px;color:#657068;font-size:9px;line-height:1.4}
+.tag-alert{background:var(--rust-pale);border-color:#edd5c7;color:#81412c}
+.portion{display:flex;align-items:center;gap:4px}
+.portion button{width:25px;height:25px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0;font-size:15px;line-height:1}
+.portion button:hover{border-color:var(--green-2);color:var(--green)}
+.portion button:disabled{opacity:.35;cursor:not-allowed}
+.portion output{min-width:35px;text-align:center;font-size:11px;font-variant-numeric:tabular-nums}
+.swap{border:0;background:transparent;color:var(--green);font-size:11px;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:4px}
+.swap:hover{color:var(--rust)}
+.empty-meal{color:var(--muted);font-style:italic}
+tfoot th,tfoot td{padding:13px 11px;border-top:2px solid var(--line-dark);font-size:12px}
+tfoot th{text-align:left}
+tfoot strong{font-variant-numeric:tabular-nums}
+.limit-strip{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);background:#fafaf6}
+.limit-stat{padding:13px 16px;border-right:1px solid var(--line)}
+.limit-stat:last-child{border-right:0}
+.limit-stat span{display:block;color:var(--muted);font-size:10px}
+.limit-stat strong{display:block;margin-top:3px;font-size:13px;font-variant-numeric:tabular-nums}
+.limit-stat .over{color:var(--danger)}
+.bottom-note{display:flex;justify-content:space-between;gap:14px;margin-top:12px;color:var(--muted);font-size:10px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:10;padding:10px 14px;background:#202922;color:white;border-radius:8px;box-shadow:0 8px 22px #0002;font-size:12px;animation:appear .18s ease-out}
+@keyframes appear{from{opacity:0;transform:translate(-50%,5px)}to{opacity:1;transform:translate(-50%,0)}}
+#targets input:disabled,#targets select:disabled{opacity:.45}
+@media(max-width:1050px){.layout{grid-template-columns:300px minmax(0,1fr)}.summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.page{padding:0 14px 32px}.site-head{height:62px;margin-bottom:24px}.intro{display:block}.intro-actions{margin-top:16px}.layout{grid-template-columns:1fr}.settings{position:static}.summary{grid-template-columns:repeat(2,1fr)}.plan-head{align-items:flex-start;flex-direction:column}.plan-actions{width:100%}.plan-actions .button{flex:1}.bottom-note{display:block}.bottom-note span{display:block;margin-top:4px}}
+@media(max-width:420px){.target{grid-template-columns:16px minmax(64px,1fr) 72px 88px;gap:5px}.settings{padding:17px}.summary{gap:7px}.stat{padding:12px}.stat-value{font-size:20px}.head-date{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{body{background:#fff}.page{max-width:none;padding:0}.site-head,.intro-actions,.settings,.plan-actions,.swap,.portion button{display:none!important}.layout{display:block}.panel,.stat{box-shadow:none}.summary{grid-template-columns:repeat(4,1fr)}.plan-panel{break-inside:avoid}.bottom-note{font-size:9px}}
 </style>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
-<div class="ambient" aria-hidden="true">
-  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
-</div>
-
-<div class="app">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="#" data-go="setup">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4.5-2-7-5.6-7-9.5A6.5 6.5 0 0 1 12 5a6.5 6.5 0 0 1 7 6.5c0 3.9-2.5 7.5-7 9.5Z"/><path d="M12 21V9"/><path d="M12 13c1.6-.3 3-1.4 3.6-2.9"/></svg>
-        </span>
-        <span class="brand-text"><strong>Nourish</strong><span>Daily nutrition planner</span></span>
-      </a>
-      <nav class="nav" aria-label="Main">
-        <button class="nav-btn" type="button" data-go="setup" aria-current="page">Your goals</button>
-        <button class="nav-btn" type="button" data-go="plan">Today’s plan</button>
-      </nav>
-    </div>
+<div class="page">
+  <header class="site-head">
+    <a class="brand" href="#" aria-label="Nourish home">
+      <span class="brand-mark" aria-hidden="true">N</span>
+      <span class="brand-name">Nourish</span>
+      <span class="brand-note">/ daily meal planner</span>
+    </a>
+    <time class="head-date" id="today"></time>
   </header>
 
-  <main class="shell" id="main">
-    <!-- ============ SETUP ============ -->
-    <section class="screen is-active" id="screen-setup" aria-labelledby="setup-title">
-      <div class="page-head">
-        <p class="kicker">Step 1 · Set your direction</p>
-        <h1 id="setup-title">What does a good day look like for you?</h1>
-        <p class="lede">Set the nutrients you want to reach or keep in check, then tell us what you like and what to avoid. We’ll shape a simple, realistic day of eating around it.</p>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Daily nutrition</p>
+        <h1 id="page-title">Plan a day of meals.</h1>
+        <p class="intro-copy">Set your targets and food preferences. The plan checks the whole day against them.</p>
       </div>
-
-      <div class="setup-grid">
-        <div>
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>Daily nutrient goals</h2>
-                <p>Reach targets are minimums to aim for. Limits are ceilings to stay under.</p>
-              </div>
-              <button class="btn btn-sm btn-ghost" type="button" id="resetGoals">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-                Reset
-              </button>
-            </div>
-
-            <div class="nutrient-grid" id="goalFields"></div>
-            <p class="hint" style="margin-top:14px; font-size:.78rem; color:var(--muted)">Not sure? Leave the defaults — they follow common general guidance for adults.</p>
-          </div>
-
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>How you like to eat</h2>
-                <p>Pick any that apply. We’ll only build meals that fit.</p>
-              </div>
-            </div>
-            <div class="chip-set" id="dietChips" role="group" aria-label="Dietary preferences"></div>
-
-            <div class="subhead" style="margin-top:22px">Foods to avoid</div>
-            <div class="field">
-              <label for="avoidInput">Allergies or foods you’d rather skip</label>
-              <div class="avoid-input-row">
-                <input type="text" id="avoidInput" placeholder="e.g. peanuts, shellfish, mushrooms" autocomplete="off" aria-describedby="avoidHint" />
-                <button class="btn btn-sm" type="button" id="addAvoid">Add</button>
-              </div>
-              <span class="hint" id="avoidHint">Press Enter to add. We’ll keep these out of every suggestion.</span>
-            </div>
-            <div class="avoid-list" id="avoidList" aria-live="polite"></div>
-
-            <div class="subhead" style="margin-top:22px">Meals in your day</div>
-            <div id="slotToggles"></div>
-          </div>
-
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px">
-            <button class="btn btn-primary" type="button" id="buildPlan">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
-              Build my day
-            </button>
-            <button class="btn" type="button" data-go="plan" id="peekPlan">See today’s plan</button>
-          </div>
-        </div>
-
-        <aside class="card preview-card" aria-labelledby="previewTitle">
-          <span class="p-glow" aria-hidden="true"></span>
-          <div class="preview-title" id="previewTitle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2"/><path d="M12 19v2"/><path d="M4.9 7.1 6.3 8.5"/><path d="M17.7 15.5l1.4 1.4"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M4.9 16.9l1.4-1.4"/><path d="M17.7 8.5l1.4-1.4"/><circle cx="12" cy="12" r="3.4"/></svg>
-            Your day at a glance
-          </div>
-          <div id="previewStats"></div>
-          <div class="preview-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg>
-            <span id="previewNote">Plans are built from whole-food building blocks and scaled to your calorie target.</span>
-          </div>
-        </aside>
-      </div>
-
-      <div class="disclaimer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 9v5"/><path d="M12 17.2v.1"/></svg>
-        <p><b>Estimates only.</b> Nutrition values are approximate and vary by brand, variety and preparation. Nourish is for general meal planning and is not medical advice. If you have a medical condition, are pregnant, or follow a prescribed diet, talk with a qualified health professional or registered dietitian.</p>
+      <div class="intro-actions">
+        <button class="button" type="button" id="rebuild">New combination</button>
+        <button class="button button-primary" type="button" id="generate">Build plan</button>
       </div>
     </section>
 
-    <!-- ============ PLAN ============ -->
-    <section class="screen" id="screen-plan" aria-labelledby="plan-title" hidden>
-      <div class="page-head" style="display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; max-width:none">
-        <div>
-          <p class="kicker">Step 2 · Your table</p>
-          <h1 id="plan-title">Today, laid out simply</h1>
-          <p class="lede" id="planLede">A balanced day built around your goals. Swap anything you don’t feel like, or nudge a portion.</p>
-          <p id="planDate" style="margin-top:8px; font-size:.84rem; color:var(--muted); font-weight:600; letter-spacing:.02em"></p>
+    <div class="layout">
+      <aside class="panel settings" aria-labelledby="settings-title">
+        <div class="section-title">
+          <h2 id="settings-title">Your settings</h2>
+          <small>Saved on this device</small>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap">
-          <button class="btn btn-sm" type="button" data-go="setup">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h10"/><path d="M18 6h2"/><path d="M4 12h4"/><path d="M12 12h8"/><path d="M4 18h12"/><path d="M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-            Edit goals
-          </button>
-          <button class="btn btn-sm btn-primary" type="button" id="shufflePlan">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
-            New day
-          </button>
-        </div>
-      </div>
 
-      <div class="plan-top">
-        <div class="card cal-card">
-          <div class="ring-wrap" aria-hidden="true">
-            <svg viewBox="0 0 132 132">
-              <defs>
-                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#cb6a42"/><stop offset="100%" stop-color="#b68a3a"/>
-                </linearGradient>
-              </defs>
-              <circle class="ring-bg" cx="66" cy="66" r="54"/>
-              <circle class="ring-fg" id="ringFg" cx="66" cy="66" r="54"/>
-            </svg>
-            <div class="ring-center"><strong id="ringPct">0%</strong><span>of calories</span></div>
+        <section aria-labelledby="targets-title">
+          <span class="field-label" id="targets-title">Daily nutrient goals</span>
+          <div class="targets" id="targets"></div>
+        </section>
+
+        <hr class="rule">
+
+        <section class="control-group" aria-labelledby="diet-title">
+          <span class="field-label" id="diet-title">Eating style</span>
+          <div class="chips" id="diet-options"></div>
+        </section>
+
+        <section class="control-group" aria-labelledby="allergen-title">
+          <span class="field-label" id="allergen-title">Allergies</span>
+          <div class="chips" id="allergen-options"></div>
+        </section>
+
+        <section class="control-group" aria-labelledby="avoid-title">
+          <label class="field-label" id="avoid-title" for="avoid-input">Foods to avoid</label>
+          <div class="avoid-row">
+            <input class="avoid-input" id="avoid-input" type="text" maxlength="40" placeholder="Add a food">
+            <button class="button" id="add-avoid" type="button">Add</button>
           </div>
-          <div class="cal-meta">
-            <span class="cm-title">Calories today</span>
-            <span class="cm-value" id="calTotal">0</span>
-            <span class="cm-sub" id="calSub">of 0 kcal goal</span>
-          </div>
-          <p class="sr-only" id="planAnnounce" aria-live="polite"></p>
-        </div>
+          <div class="avoid-list" id="avoid-list" aria-live="polite"></div>
+        </section>
 
-        <div class="card" style="padding:0">
-          <div class="macro-grid" id="macroGrid"></div>
-        </div>
-      </div>
+        <section class="control-group" aria-labelledby="slots-title">
+          <span class="field-label" id="slots-title">Include</span>
+          <div class="slot-list" id="slot-options"></div>
+        </section>
 
-      <div id="planCompliance" class="plan-compliance" role="status" aria-live="polite"></div>
+        <p class="settings-foot">A goal marked “At least” is a minimum. “At most” is a hard limit.</p>
+      </aside>
 
-      <div class="card plan-card">
-        <div class="plan-card-head">
-          <div class="card-head" style="margin-bottom:14px">
+      <section class="results" aria-labelledby="plan-title">
+        <div class="summary" id="summary" aria-label="Daily nutrition totals"></div>
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+        <section class="panel plan-panel">
+          <div class="plan-head">
             <div>
-              <h2>Your meal plan</h2>
-              <p id="planSummary">Meals, portions and estimated nutrition.</p>
+              <h2 id="plan-title">Meal plan</h2>
+              <p id="plan-subtitle">Five suggested meals and snacks.</p>
             </div>
-            <div class="chip-set" style="align-items:center">
-              <span class="tag green" id="dietTag">Balanced</span>
+            <div class="plan-actions">
+              <button class="button" id="print" type="button">Print</button>
             </div>
           </div>
-        </div>
-
-        <div class="table-scroll">
-          <table class="plan-table" id="planTable">
-            <caption class="sr-only">Daily meal plan with suggested meals, portions, ingredients and estimated nutrition. Daily totals appear in the final row.</caption>
-            <thead>
-              <tr>
-                <th scope="col">Meal</th>
-                <th scope="col">Suggestion</th>
-                <th scope="col">Portion</th>
-                <th scope="col" class="num">Cal</th>
-                <th scope="col" class="num">Protein</th>
-                <th scope="col" class="num">Carbs</th>
-                <th scope="col" class="num">Fat</th>
-                <th scope="col">Adjust</th>
-              </tr>
-            </thead>
-            <tbody id="planBody"></tbody>
-            <tfoot id="planFoot"></tfoot>
-          </table>
-        </div>
-
-        <div class="plan-actions">
-          <span class="save-state" id="saveState"><span class="pulse-dot" aria-hidden="true"></span> Saved on this device</span>
-          <span class="spacer"></span>
-          <button class="btn btn-sm" type="button" id="resetPlan">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-            Rebuild plan
-          </button>
-          <button class="btn btn-sm" type="button" id="printPlan">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>
-            Print
-          </button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:18px">
-        <div class="card-head">
-          <div>
-            <h2>Limits to watch</h2>
-            <p>How today’s plan sits against the ceilings you set.</p>
+          <div class="table-wrap">
+            <table>
+              <caption>Daily meal plan with ingredients, portions and estimated nutrition</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Time</th><th scope="col">Meal and ingredients</th><th scope="col">Portion</th>
+                  <th scope="col" class="num">kcal</th><th scope="col" class="num">Protein</th>
+                  <th scope="col" class="num">Carbs</th><th scope="col" class="num">Fat</th><th scope="col">Change</th>
+                </tr>
+              </thead>
+              <tbody id="meal-rows"></tbody>
+              <tfoot id="table-total"></tfoot>
+            </table>
           </div>
+          <div class="limit-strip" id="limit-strip" aria-label="Daily limits"></div>
+        </section>
+        <div class="bottom-note">
+          <span>Nutrition figures are estimates based on the listed ingredients.</span>
+          <span>For general meal planning; not medical advice.</span>
         </div>
-        <div id="limitMeters"></div>
-      </div>
-
-      <div class="disclaimer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 20h18L12 3Z"/><path d="M12 9v5"/><path d="M12 17.2v.1"/></svg>
-        <p><b>Estimates only.</b> Nutrition values are approximate and vary by brand, variety and preparation. Nourish is for general meal planning and is not medical advice. If you have a medical condition, are pregnant, or follow a prescribed diet, talk with a qualified health professional or registered dietitian.</p>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
-
-  <footer class="site-footer">
-    <span>Nourish · a calm daily nutrition planner</span>
-    <span>Estimates are approximate · not medical advice</span>
-  </footer>
 </div>
-
-<dialog class="detail-dialog" id="detailDialog" aria-labelledby="dlgTitle"></dialog>
-<div class="toast-stack" id="toastStack" role="status" aria-live="polite"></div>
 <script>
 "use strict";
 
-/* ============================================================
-   Nutrition planner — data
-   Ingredient entries: [name, quantity, kcal, protein, carbs, fat, fiber, sugar, sodium]
-   ============================================================ */
-
 const SLOTS = [
-  { id:"breakfast", label:"Breakfast", time:"7:30 am", share:0.25, defaultOn:true },
-  { id:"snack1",    label:"Morning snack", time:"10:30 am", share:0.07, defaultOn:true },
-  { id:"lunch",     label:"Lunch", time:"12:30 pm", share:0.30, defaultOn:true },
-  { id:"snack2",    label:"Afternoon snack", time:"4:00 pm", share:0.08, defaultOn:true },
-  { id:"dinner",    label:"Dinner", time:"7:00 pm", share:0.30, defaultOn:true },
+  {id:"breakfast",label:"Breakfast",time:"7:30 am",share:.25,defaultOn:true},
+  {id:"snack1",label:"Morning snack",time:"10:30 am",share:.07,defaultOn:true},
+  {id:"lunch",label:"Lunch",time:"12:30 pm",share:.30,defaultOn:true},
+  {id:"snack2",label:"Afternoon snack",time:"4:00 pm",share:.08,defaultOn:true},
+  {id:"dinner",label:"Dinner",time:"7:00 pm",share:.30,defaultOn:true}
 ];
-
-const NUTRIENTS = [
-  { key:"calories", label:"Calories", unit:"kcal", step:50,   def:2000, mode:"reach" },
-  { key:"protein",  label:"Protein",  unit:"g",    step:5,    def:100,  mode:"reach" },
-  { key:"carbs",    label:"Carbohydrates", unit:"g", step:10, def:250,  mode:"reach" },
-  { key:"fat",      label:"Fat",      unit:"g",    step:5,    def:65,   mode:"reach" },
-  { key:"fiber",    label:"Fiber",    unit:"g",    step:2,    def:30,   mode:"reach" },
-  { key:"sugar",    label:"Sugar",    unit:"g",    step:5,    def:50,   mode:"limit" },
-  { key:"sodium",   label:"Sodium",   unit:"mg",   step:100,  def:2300, mode:"limit" },
+const NUTRIENTS=[
+  {key:"calories",label:"Calories",unit:"kcal",def:2000,mode:"reach"},
+  {key:"protein",label:"Protein",unit:"g",def:100,mode:"reach"},
+  {key:"carbs",label:"Carbohydrates",unit:"g",def:250,mode:"reach"},
+  {key:"fat",label:"Fat",unit:"g",def:65,mode:"reach"},
+  {key:"fiber",label:"Fiber",unit:"g",def:30,mode:"reach"},
+  {key:"sugar",label:"Sugar",unit:"g",def:50,mode:"limit"},
+  {key:"sodium",label:"Sodium",unit:"mg",def:2300,mode:"limit"}
 ];
-
-const DIETS = [
-  { id:"vegetarian", label:"Vegetarian" },
-  { id:"vegan",      label:"Plant-based" },
-  { id:"pescatarian",label:"Pescatarian" },
-  { id:"gluten-free",label:"Gluten-free" },
-  { id:"dairy-free", label:"Dairy-free" },
-  { id:"high-protein",label:"High protein" },
-  { id:"low-carb",   label:"Lower carb" },
-];
-
-const ALLERGEN_LABEL = {
-  gluten:"gluten", dairy:"dairy", egg:"egg", fish:"fish", shellfish:"shellfish",
-  soy:"soy", sesame:"sesame", peanut:"peanut", "tree nuts":"tree nuts", nuts:"tree nuts"
-};
 
 function meal(id, slot, emoji, name, desc, diets, allergens, ingredients){
   const totals = ingredients.reduce((a, ing) => {
     for (let i = 2; i < 9; i++) a[i - 2] += ing[i] || 0;
     return a;
   }, [0,0,0,0,0,0,0]);
-  return { id, slot, emoji, name, desc, diets, allergens, ingredients,
+  return { id, slot, emoji, name, desc:ingredients.map(ing => ing[1] + " " + ing[0]).join(", "), diets, allergens, ingredients,
            base:{ cal:totals[0], protein:totals[1], carbs:totals[2], fat:totals[3],
                   fiber:totals[4], sugar:totals[5], sodium:totals[6] } };
 }
@@ -1039,213 +543,148 @@ const MEALS = [
      ["Olive oil & lemon","1 tsp",45,0,0,5,0,0,0]]),
 ];
 
-/* rotate snacks across both snack slots */
-const POOLS = {
-  breakfast: MEALS.filter(m => m.slot === "breakfast"),
-  lunch: MEALS.filter(m => m.slot === "lunch"),
-  dinner: MEALS.filter(m => m.slot === "dinner"),
-  snack: MEALS.filter(m => m.slot === "snack1"),
-};
-</script>
-<script>
-"use strict";
+const DIETS=[
+  {id:"vegetarian",label:"Vegetarian"},
+  {id:"vegan",label:"Vegan"},
+  {id:"pescatarian",label:"Pescatarian"},
+  {id:"gluten-free",label:"Gluten-free"},
+  {id:"dairy-free",label:"Dairy-free"},
+  {id:"high-protein",label:"High protein"},
+  {id:"low-carb",label:"Lower carb"}
+];
+const ALLERGENS=["gluten","dairy","egg","fish","shellfish","soy","sesame","peanut","tree nuts"];
+const STORAGE_KEY="nourish.state.v1";
+const DIET_IDS=new Set(DIETS.map(x=>x.id));
+const DEFAULTS=makeDefaultState();
 
-/* ============================================================
-   State
-   ============================================================ */
-const STORAGE_KEY = "nourish.state.v1";
-
-const defaultState = () => ({
-  goals: Object.fromEntries(NUTRIENTS.map(n => [n.key, { value:n.def, mode:n.mode, on:true }])),
-  diets: ["vegetarian"],
-  avoids: [],
-  slots: Object.fromEntries(SLOTS.map(s => [s.id, s.defaultOn])),
-  plan: null,
-  seed: 1,
-});
-
-let state = load();
-let lastFocused = null;
-
-function load(){
-  const base = defaultState();
+function makeDefaultState(){
+  return {
+    goals:Object.fromEntries(NUTRIENTS.map(n=>[n.key,{on:true,value:n.def,mode:n.mode}])),
+    diets:["vegetarian"],allergens:[],avoids:[],
+    slots:Object.fromEntries(SLOTS.map(s=>[s.id,s.defaultOn])),
+    seed:1,plan:null
+  };
+}
+function loadState(){
+  const base=makeDefaultState();
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return base;
-    const saved = JSON.parse(raw);
-    const merged = { ...base, ...saved };
-    merged.goals = { ...base.goals };
-    for (const n of NUTRIENTS){
-      const s = saved.goals?.[n.key];
-      merged.goals[n.key] = s
-        ? { value:Number(s.value) || 0, mode:s.mode === "limit" ? "limit" : "reach", on:s.on !== false }
-        : base.goals[n.key];
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+    if(!saved)return base;
+    for(const n of NUTRIENTS){
+      const old=saved.goals&&saved.goals[n.key];
+      if(old)base.goals[n.key]={on:old.on!==false,value:clampNumber(old.value,n.def),mode:old.mode==="limit"?"limit":"reach"};
     }
-    merged.slots = { ...base.slots, ...(saved.slots || {}) };
-    merged.diets = Array.isArray(saved.diets) ? saved.diets.filter(d => DIETS.some(x => x.id === d)) : base.diets;
-    merged.avoids = Array.isArray(saved.avoids) ? saved.avoids.filter(a => typeof a === "string").slice(0, 40) : [];
-    merged.plan = saved.plan && Array.isArray(saved.plan.rows) ? saved.plan : null;
-    return merged;
-  } catch { return base; }
+    base.diets=Array.isArray(saved.diets)?saved.diets.filter(x=>DIET_IDS.has(x)):[...base.diets];
+    base.allergens=Array.isArray(saved.allergens)?saved.allergens.filter(x=>ALLERGENS.includes(x)):[];
+    base.avoids=Array.isArray(saved.avoids)?saved.avoids.filter(x=>typeof x==="string").slice(0,12):[];
+    for(const s of SLOTS)if(saved.slots&&typeof saved.slots[s.id]==="boolean")base.slots[s.id]=saved.slots[s.id];
+    if(!SLOTS.some(s=>base.slots[s.id]))base.slots[SLOTS[0].id]=true;
+    base.seed=Number(saved.seed)||1;
+    base.plan=saved.plan||null;
+  }catch{}
+  return base;
 }
-
-let saveTimer = null;
-function save(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch { /* storage unavailable — planning still works for this session */ }
-  const el = document.getElementById("saveState");
-  if (el){
-    el.innerHTML = '<span class="pulse-dot" aria-hidden="true"></span> Saved on this device';
-  }
+let state=loadState();
+let toastTimer=0;
+const $=s=>document.querySelector(s);
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function clampNumber(v,fallback){
+  const n=Number(v);
+  return Number.isFinite(n)?clamp(n,0,20000):fallback;
 }
-function queueSave(){
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(save, 350);
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-
-/* ============================================================
-   Helpers
-   ============================================================ */
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
-const round = (n, step = 1) => Math.round(n / step) * step;
-
 function normalise(s){
-  return String(s).toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+  return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
 }
-
-const AVOID_ALIASES = {
-  nuts:["tree nuts","peanut"], "tree nut":["tree nuts"], peanuts:["peanut"],
-  eggs:["egg"], dairy:[ "dairy"], milk:["dairy"], lactose:["dairy"],
-  wheat:["gluten"], bread:["gluten"], "gluten free":["gluten"],
-  shellfish:["shellfish"], shrimp:["shellfish"], prawns:["shellfish"],
-  fish:["fish"], salmon:["fish"], tuna:["fish"], cod:["fish"],
-  soy:["soy"], soya:["soy"], tofu:["soy"], sesame:["sesame"], tahini:["sesame"],
-  gluten:["gluten"], cheese:["dairy"], yogurt:["dairy"], yoghurt:["dairy"],
-};
-
-function avoidTerms(){
-  const out = [];
-  for (const raw of state.avoids){
-    const n = normalise(raw);
-    if (!n) continue;
-    out.push({ raw, needles:[n, ...(AVOID_ALIASES[n] || [])] });
+function format(value,unit){
+  const places=unit==="g"?1:0;
+  const rounded=places?Math.round(value*10)/10:Math.round(value);
+  return rounded.toLocaleString(undefined,{maximumFractionDigits:places});
+}
+function scaled(m,mult){
+  const b=m.base;
+  return {cal:b.cal*mult,protein:b.protein*mult,carbs:b.carbs*mult,fat:b.fat*mult,fiber:b.fiber*mult,sugar:b.sugar*mult,sodium:b.sodium*mult};
+}
+function totalsFor(rows){
+  const total={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0};
+  for(const row of rows){
+    const m=mealById(row.mealId);
+    if(!m)continue;
+    const part=scaled(m,row.mult);
+    for(const key in total)total[key]+=part[key];
   }
-  return out;
+  return total;
 }
-
-function mealBlocked(m, terms){
-  const tags = m.allergens.map(normalise);
-  const ingText = m.ingredients.map(i => normalise(i[0])).join(" | ");
-  return terms.some(({ needles }) => needles.some(needle => {
-    if (!needle) return false;
-    if (tags.some(t => t === needle || t.includes(needle) || needle.includes(t))) return true;
-    return ingText.includes(needle);
-  }));
-}
-
+function mealById(id){return MEALS.find(m=>m.id===id)||null}
+function goalOf(key){const g=state.goals[key];return g&&g.on?g:null}
+function enabledSlots(){const on=SLOTS.filter(s=>state.slots[s.id]);return on.length?on:[SLOTS[0]]}
 function dietAllows(m){
-  const d = state.diets;
-  if (!d.length) return true;
-  const tags = m.diets;
-  const plantOnly = tags.includes("vegan");
-  const veg = plantOnly || tags.includes("vegetarian");
-  const pesc = veg || tags.includes("pescatarian");
-  if (d.includes("vegan") && !plantOnly) return false;
-  if (d.includes("vegetarian") && !veg) return false;
-  if (d.includes("pescatarian") && !pesc) return false;
-  if (d.includes("gluten-free") && !tags.includes("gluten-free")) return false;
-  if (d.includes("dairy-free") && !tags.includes("dairy-free")) return false;
+  for(const id of state.diets){
+    if(id==="vegetarian"&&!m.diets.includes("vegetarian"))return false;
+    if(id==="vegan"&&!m.diets.includes("vegan"))return false;
+    if(id==="pescatarian"&&!m.diets.includes("pescatarian"))return false;
+    if(id==="gluten-free"&&m.allergens.includes("gluten"))return false;
+    if(id==="dairy-free"&&m.allergens.includes("dairy"))return false;
+    if(id==="high-protein"&&!m.diets.includes("high-protein"))return false;
+    if(id==="low-carb"&&!m.diets.includes("low-carb"))return false;
+  }
   return true;
 }
-
+function mealBlocked(m){
+  if(state.allergens.some(a=>m.allergens.includes(a)))return true;
+  const terms=state.avoids.map(normalise);
+  if(!terms.length)return false;
+  const names=[m.name,...m.ingredients.map(i=>i[0])].map(normalise);
+  return terms.some(term=>names.some(name=>name.includes(term)||term.includes(name)));
+}
 function candidatesFor(slotId){
-  const terms = avoidTerms();
-  const pool = slotId.startsWith("snack") ? POOLS.snack : POOLS[slotId];
-  const allowed = pool.filter(m => dietAllows(m) && !mealBlocked(m, terms));
-  return allowed.length ? allowed : [];
+  const source=slotId.startsWith("snack")?POOLS.snack:POOLS[slotId];
+  return source.filter(m=>dietAllows(m)&&!mealBlocked(m));
 }
+const POOLS={
+  breakfast:MEALS.filter(m=>m.slot==="breakfast"),
+  lunch:MEALS.filter(m=>m.slot==="lunch"),
+  dinner:MEALS.filter(m=>m.slot==="dinner"),
+  snack:MEALS.filter(m=>m.slot==="snack1")
+};
 
-function enabledSlots(){
-  const on = SLOTS.filter(s => state.slots[s.id]);
-  return on.length ? on : [SLOTS[0]];
+function bestPortion(m,target){
+  if(!m.base.cal)return 1;
+  return clamp(Math.round(target/m.base.cal*4)/4,.5,2);
 }
-
-/* multiplier → scaled nutrition */
-function scaled(m, mult){
-  const b = m.base;
-  return {
-    cal: b.cal * mult, protein: b.protein * mult, carbs: b.carbs * mult, fat: b.fat * mult,
-    fiber: b.fiber * mult, sugar: b.sugar * mult, sodium: b.sodium * mult,
-  };
-}
-
-function goalOf(key){
-  const g = state.goals[key];
-  return g && g.on ? g : null;
-}
-
-/* ============================================================
-   Plan building
-   ============================================================ */
-function pseudoRandom(seed){
-  let t = seed + 0x6D2B79F5;
-  return function(){
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function scoreMeal(m, slotCalTarget, slot){
-  const b = m.base;
-  if (!b.cal) return 1e9;
-  const portion = bestPortion(m, slotCalTarget);
-  const nutrition = scaled(m, portion);
-  let score = Math.abs(nutrition.cal - slotCalTarget) / Math.max(slotCalTarget, 1);
-  const slots = enabledSlots();
-  const totalShare = slots.reduce((sum, item) => sum + item.share, 0) || 1;
-  const share = (slot?.share || 1) / totalShare;
-  for (const key of ["protein", "carbs", "fat", "fiber", "sugar", "sodium"]){
-    const goal = goalOf(key);
-    if (!goal || goal.value <= 0) continue;
-    const target = goal.value * share;
-    const actual = nutrition[key];
-    if (goal.mode === "reach"){
-      /* Reward meals that contribute toward this slot's share of a daily target. */
-      score += Math.max(0, 1 - actual / target) * 0.55;
-    } else {
-      /* Strongly avoid spending too much of a daily limit in one meal. */
-      score += Math.max(0, actual / target - 0.8) * 0.85;
-    }
+function unmetGoals(totals){
+  const result=[];
+  for(const n of NUTRIENTS){
+    const goal=goalOf(n.key);
+    if(!goal||goal.value<=0)continue;
+    const amount=totals[n.key==="calories"?"cal":n.key];
+    if(goal.mode==="reach"&&amount+1e-6<goal.value)result.push({key:n.key,amount:goal.value-amount,text:n.label+" is "+format(goal.value-amount,n.unit)+" "+n.unit+" below target"});
+    if(goal.mode==="limit"&&amount-1e-6>goal.value)result.push({key:n.key,amount:amount-goal.value,text:n.label+" is "+format(amount-goal.value,n.unit)+" "+n.unit+" over limit"});
   }
-  if (state.diets.includes("high-protein")) score -= Math.min(nutrition.protein / Math.max(nutrition.cal, 1), 0.3) * 0.9;
-  if (state.diets.includes("low-carb")) score += Math.min(nutrition.carbs / Math.max(nutrition.cal, 1), 0.6) * 0.5;
-  if (slot?.id === "snack1" && nutrition.cal > 260) score += 0.4;
-  return score;
+  return result;
 }
-
-function bestPortion(m, targetCal){
-  if (!m.base.cal) return 1;
-  const raw = targetCal / m.base.cal;
-  return clamp(round(raw * 4) / 4, 0.5, 2);
+function goalsAreMet(totals){return unmetGoals(totals).length===0}
+function goalsGapScore(totals){
+  return unmetGoals(totals).reduce((sum,item)=>sum+item.amount/Math.max(goalOf(item.key).value,1),0);
 }
-
-function buildPlan(seed = Date.now() % 100000){
-  const slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1;
+function pseudoRandom(seed){
+  let t=seed+0x6D2B79F5;
+  return function(){t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}
+}
+function buildPlan(seed){
+  const slots=enabledSlots(),shareTotal=slots.reduce((a,s)=>a+s.share,0)||1;
   const calorieGoal=goalOf("calories")?.value||2000,rnd=pseudoRandom(seed);
-  const portionOffsets=[-0.5,-0.25,0,0.25,0.5];
+  const portionOffsets=[-.5,-.25,0,.25,.5];
   const options=slots.map(slot=>{
-    const targetCal=calorieGoal*(slot.share/totalShare);
-    const meals=candidatesFor(slot.id).map(m=>{const mult=bestPortion(m,targetCal);return{row:{slotId:slot.id,mealId:m.id,mult},nutrition:scaled(m,mult)}});
+    const target=calorieGoal*(slot.share/shareTotal);
+    const meals=candidatesFor(slot.id).map(m=>{const mult=bestPortion(m,target);return{row:{slotId:slot.id,mealId:m.id,mult},nutrition:scaled(m,mult)}});
     return meals.length?meals:[{row:{slotId:slot.id,mealId:null,mult:1},nutrition:null}];
   });
   const totals={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0};
-  const counts=new Map(),rows=[],topMenus=[];
-  const scoreKeys=[["calories","cal"],["protein","protein"],["carbs","carbs"],["fat","fat"],["fiber","fiber"],["sugar","sugar"],["sodium","sodium"]];
-  let bestCompliantRows=null,bestFallbackRows=null,bestCompliantScore=Infinity,bestFallbackScore=Infinity;
+  const counts=new Map(),rows=[],topMenus=[],scoreKeys=[["calories","cal"],["protein","protein"],["carbs","carbs"],["fat","fat"],["fiber","fiber"],["sugar","sugar"],["sodium","sodium"]];
+  let bestCompliant=null,bestFallback=null,bestCompliantScore=Infinity,bestFallbackScore=Infinity;
   function scoreDay(){
     let score=0;
     for(const [key,totalKey] of scoreKeys){
@@ -1256,902 +695,286 @@ function buildPlan(seed = Date.now() % 100000){
     for(const count of counts.values())score+=Math.max(0,count-1)*.18;
     return score;
   }
-  function searchMealChoices(i){
-    if(i===options.length){
-      const compliant=goalsAreMet(totals),violation=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
-      const snapshot=rows.map(row=>({...row}));
-      if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=snapshot}
-      const fallbackScore=score+violation*100;
-      if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=snapshot}
-      if(topMenus.length<12){
-        topMenus.push({rows:snapshot,score:fallbackScore});
-        topMenus.sort((a,b)=>a.score-b.score);
-      }else if(fallbackScore<topMenus[topMenus.length-1].score){
-        topMenus[topMenus.length-1]={rows:snapshot,score:fallbackScore};
-        topMenus.sort((a,b)=>a.score-b.score);
-      }
-      return;
-    }
+  function examine(rowsNow){
+    const compliant=goalsAreMet(totals),gap=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
+    if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliant=rowsNow.map(r=>({...r}))}
+    const fallbackScore=score+gap*100;
+    if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallback=rowsNow.map(r=>({...r}))}
+    if(topMenus.length<12){topMenus.push({rows:rowsNow.map(r=>({...r})),score:fallbackScore});topMenus.sort((a,b)=>a.score-b.score)}
+    else if(fallbackScore<topMenus[topMenus.length-1].score){topMenus[topMenus.length-1]={rows:rowsNow.map(r=>({...r})),score:fallbackScore};topMenus.sort((a,b)=>a.score-b.score)}
+  }
+  function walkMenus(i){
+    if(i===options.length){examine(rows);return}
     for(const option of options[i]){
       rows.push(option.row);
       if(option.nutrition){for(const key in totals)totals[key]+=option.nutrition[key];counts.set(option.row.mealId,(counts.get(option.row.mealId)||0)+1)}
-      searchMealChoices(i+1);
+      walkMenus(i+1);
       if(option.nutrition){for(const key in totals)totals[key]-=option.nutrition[key];const count=counts.get(option.row.mealId)-1;if(count)counts.set(option.row.mealId,count);else counts.delete(option.row.mealId)}
       rows.pop();
     }
   }
-  searchMealChoices(0);
-
-  let checkedServingAlternatives=0;
-  if(!bestCompliantRows){
+  walkMenus(0);
+  let checkedPortions=0;
+  if(!bestCompliant){
+    function scorePortions(rowsNow){
+      const compliant=goalsAreMet(totals),gap=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
+      checkedPortions++;
+      if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliant=rowsNow.map(r=>({...r}))}
+      const fallbackScore=score+gap*100;
+      if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallback=rowsNow.map(r=>({...r}))}
+    }
     for(const menu of topMenus){
       counts.clear();
       for(const row of menu.rows)if(row.mealId)counts.set(row.mealId,(counts.get(row.mealId)||0)+1);
-      const portionRows=[];
-      function searchPortions(i){
-        if(i===menu.rows.length){
-          checkedServingAlternatives++;
-          const compliant=goalsAreMet(totals),violation=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
-          if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=portionRows.map(row=>({...row}))}
-          const fallbackScore=score+violation*100;
-          if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=portionRows.map(row=>({...row}))}
-          return;
-        }
+      const chosen=[];
+      function walkPortions(i){
+        if(i===menu.rows.length){scorePortions(chosen);return}
         const base=menu.rows[i],m=mealById(base.mealId);
-        if(!m){portionRows.push({...base});searchPortions(i+1);portionRows.pop();return}
-        const slot=SLOTS.find(item=>item.id===base.slotId);
-        const center=bestPortion(m,calorieGoal*(slot.share/totalShare));
-        const levels=portionOffsets.map(delta=>clamp(center+delta,0.5,2)).filter((value,index,all)=>all.indexOf(value)===index);
+        if(!m){chosen.push({...base});walkPortions(i+1);chosen.pop();return}
+        const slot=SLOTS.find(s=>s.id===base.slotId);
+        const center=bestPortion(m,calorieGoal*(slot.share/shareTotal));
+        const levels=portionOffsets.map(d=>clamp(center+d,.5,2)).filter((v,j,a)=>a.indexOf(v)===j);
         for(const mult of levels){
           const nutrition=scaled(m,mult);
-          portionRows.push({...base,mult});
+          chosen.push({...base,mult});
           for(const key in totals)totals[key]+=nutrition[key];
-          searchPortions(i+1);
+          walkPortions(i+1);
           for(const key in totals)totals[key]-=nutrition[key];
-          portionRows.pop();
+          chosen.pop();
         }
       }
-      searchPortions(0);
+      walkPortions(0);
     }
   }
-  const selectedRows=bestCompliantRows||bestFallbackRows||[];
-  return{
-    seed,rows:selectedRows,compliant:Boolean(bestCompliantRows),
-    checkedAllMealChoicesAtSuggestedPortions:true,checkedServingAlternatives,
-    builtAt:Date.now(),
-  };
+  const rowsOut=bestCompliant||bestFallback||[];
+  return{seed,rows:rowsOut,compliant:Boolean(bestCompliant),checked:checkedPortions,builtAt:Date.now()};
 }
-
-function filterSignature(){
+function signature(){
   return JSON.stringify({
-    diets:[...state.diets].sort(),
-    avoids:state.avoids.map(normalise).sort(),
-    slots:SLOTS.filter(s => state.slots[s.id]).map(s => s.id),
-    goals:Object.fromEntries(Object.entries(state.goals).map(([key, goal]) => [key, { on:goal.on, value:goal.value, mode:goal.mode }])),
-    plannerVersion:4,
+    goals:state.goals,diets:[...state.diets].sort(),allergens:[...state.allergens].sort(),
+    avoids:state.avoids.map(normalise).sort(),slots:enabledSlots().map(s=>s.id),version:1
   });
 }
-
 function ensurePlan(){
-  const sig = filterSignature();
-  if (!state.plan || !state.plan.rows?.length || state.plan.sig !== sig){
-    state.plan = buildPlan(state.seed + 1);
-    state.seed += 1;
-    state.plan.sig = sig;
-  }
-  const validIds = new Set(MEALS.map(m => m.id));
-  state.plan.rows = state.plan.rows.filter(r => SLOTS.some(s => s.id === r.slotId) && state.slots[r.slotId]);
-  for (const r of state.plan.rows){
-    if (r.mealId && !validIds.has(r.mealId)) r.mealId = null;
-    r.mult = clamp(Number(r.mult) || 1, 0.25, 3);
+  const sig=signature();
+  if(!state.plan||state.plan.sig!==sig){
+    state.seed+=1;
+    state.plan=buildPlan(state.seed);
+    state.plan.sig=sig;
+    saveState();
   }
   return state.plan;
 }
-
-function mealById(id){ return MEALS.find(m => m.id === id) || null; }
-
-function totalsForRows(rows){
-  const totals = { cal:0, protein:0, carbs:0, fat:0, fiber:0, sugar:0, sodium:0 };
-  for (const r of rows){
-    const m = mealById(r.mealId);
-    if (!m) continue;
-    const s = scaled(m, r.mult);
-    for (const k in totals) totals[k] += s[k];
-  }
-  return totals;
+function saveState(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch{}
 }
-function planTotals(){ return totalsForRows(ensurePlan().rows); }
-function formatNutrientAmount(value, unit){
-  const amount=unit==="g"?Math.round(value*10)/10:Math.round(value);
-  return amount.toLocaleString(undefined,{maximumFractionDigits:1});
+function markStale(){
+  if(state.plan)state.plan.sig=null;
+  saveState();
+  renderPlan();
 }
-function unmetGoals(totals){
-  const unmet=[];
-  for(const n of NUTRIENTS){
-    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
-    const actual=totals[n.key==="calories"?"cal":n.key];
-    if(goal.mode==="reach"&&actual+1e-6<goal.value)unmet.push({key:n.key,text:`${n.label}: ${formatNutrientAmount(goal.value-actual,n.unit)} ${n.unit} below target`});
-    else if(goal.mode==="limit"&&actual-1e-6>goal.value)unmet.push({key:n.key,text:`${n.label}: ${formatNutrientAmount(actual-goal.value,n.unit)} ${n.unit} over limit`});
-  }
-  return unmet;
+function amountForRow(row,key){
+  const m=mealById(row.mealId);
+  return m?scaled(m,row.mult)[key]:0;
 }
-function goalsGapScore(totals){
-  let score=0;
-  for(const n of NUTRIENTS){
-    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
-    const actual=totals[n.key==="calories"?"cal":n.key];
-    if(goal.mode==="reach"&&actual<goal.value)score+=(goal.value-actual)/goal.value;
-    else if(goal.mode==="limit"&&actual>goal.value)score+=(actual-goal.value)/goal.value;
+function scoreMeal(m,target,slot){
+  const portion=bestPortion(m,target),n=scaled(m,portion);
+  let score=Math.abs(n.cal-target)/Math.max(target,1);
+  const totalShare=enabledSlots().reduce((s,x)=>s+x.share,0)||1,share=slot.share/totalShare;
+  for(const key of ["protein","carbs","fat","fiber","sugar","sodium"]){
+    const goal=goalOf(key);if(!goal)continue;
+    const perSlot=goal.value*share,ratio=n[key]/perSlot;
+    score+=goal.mode==="limit"?Math.max(0,ratio-.8)*.8:Math.max(0,1-ratio)*.45;
   }
   return score;
 }
-function goalsAreMet(totals){
-  for(const n of NUTRIENTS){
-    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
-    const actual=totals[n.key==="calories"?"cal":n.key];
-    if(goal.mode==="limit"&&actual>goal.value+1e-6)return false;
-    if(goal.mode==="reach"&&actual+1e-6<goal.value)return false;
-  }
-  return true;
-}
-</script>
-<script>
-"use strict";
-
-/* ============================================================
-   Toasts
-   ============================================================ */
-function toast(message, icon = "check"){
-  const stack = $("#toastStack");
-  if (!stack) return;
-  const el = document.createElement("div");
-  el.className = "toast";
-  const paths = {
-    check:'<path d="m4.5 12.5 4.8 4.8L19.5 7"/>',
-    swap:'<path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/>',
-    spark:'<path d="M12 3v4"/><path d="M12 17v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="m6 6 2.5 2.5"/><path d="m15.5 15.5 2.5 2.5"/>',
-    info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/>',
-  };
-  el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[icon] || paths.check}</svg><span></span>`;
-  el.querySelector("span").textContent = message;
-  stack.appendChild(el);
-  while (stack.children.length > 3) stack.firstElementChild.remove();
-  setTimeout(() => {
-    el.classList.add("leaving");
-    el.addEventListener("animationend", () => el.remove(), { once:true });
-  }, 3200);
-}
-
-/* ============================================================
-   Navigation
-   ============================================================ */
-let currentScreen = "setup";
-
-function goTo(name, opts = {}){
-  if (name === currentScreen) {
-    if (name === "plan") renderPlan();
-    return;
-  }
-  const next = document.getElementById(`screen-${name}`);
-  const prev = document.getElementById(`screen-${currentScreen}`);
-  if (!next) return;
-
-  if (name === "plan"){
-    ensurePlan();
-    renderPlan();
-  } else {
-    renderSetup();
-  }
-
-  prev.classList.remove("is-active");
-  prev.hidden = true;
-  next.hidden = false;
-  next.classList.add("is-active", "is-entering");
-  setTimeout(() => next.classList.remove("is-entering"), 600);
-
-  currentScreen = name;
-  if (opts.remember !== false){
-    try{ history.replaceState(null, "", name === "plan" ? "#plan" : "#goals"); } catch {}
-  }
-  $$(".nav-btn").forEach(b => {
-    if (b.dataset.go === name) b.setAttribute("aria-current", "page");
-    else b.removeAttribute("aria-current");
-  });
-  window.scrollTo({ top:0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-}
-
-/* ============================================================
-   Setup screen
-   ============================================================ */
-function renderGoalFields(changedKey){
-  const host = $("#goalFields");
-  host.innerHTML = NUTRIENTS.map(n => {
-    const g = state.goals[n.key];
-    const isLimit = g.mode === "limit";
-    return `
-      <div class="nutrient" data-key="${n.key}">
-        <div class="n-head">
-          <label class="n-name" for="goal-${n.key}">${n.label}</label>
-          <span class="n-mode">${isLimit ? "limit" : "reach"}</span>
-        </div>
-        <div class="num-wrap">
-          <input type="number" id="goal-${n.key}" data-goal="${n.key}" inputmode="numeric"
-            min="0" step="${n.step}" value="${g.value}" aria-label="${n.label} daily ${isLimit ? "limit" : "target"} in ${n.unit}" />
-          <span class="unit">${n.unit}</span>
-        </div>
-        <button class="chip" type="button" data-mode="${n.key}" aria-pressed="${isLimit}" style="justify-self:start; font-size:.72rem; padding:3px 9px">
-          ${isLimit ? "Stay under" : "Aim for"}
-        </button>
-      </div>`;
-  }).join("");
-
-  if (changedKey){
-    const input = host.querySelector(`[data-goal="${changedKey}"]`);
-    if (input) input.classList.add("changed");
-  }
-}
-
-function renderPreview(){
-  const host = $("#previewStats");
-  const calGoal = goalOf("calories");
-  const onboarding = !state.plan;
-  const totals = onboarding ? null : planTotals();
-
-  const stats = [
-    { key:"calories", label:"Energy" },
-    { key:"protein", label:"Protein" },
-    { key:"fiber", label:"Fiber" },
-    { key:"sugar", label:"Sugar" },
-  ];
-
-  host.innerHTML = stats.map(({ key, label }) => {
-    const g = goalOf(key);
-    if (!g) return "";
-    const n = NUTRIENTS.find(x => x.key === key);
-    const val = totals ? totals[key === "calories" ? "cal" : key] : null;
-    const pct = totals && g.value ? clamp((val / g.value) * 100, 0, 130) : 0;
-    const good = totals && (g.mode === "limit" ? val <= g.value : val >= g.value * 0.85);
-    const color = !totals ? "var(--olive)" : good ? "var(--olive)" : "var(--gold)";
-    return `
-      <div class="preview-stat">
-        <div style="flex:1; min-width:0">
-          <div class="ps-label">${label} <span style="font-weight:500; color:var(--muted)">· ${g.mode === "limit" ? "under" : "aim"} ${g.value.toLocaleString()}${n.unit === "kcal" ? " kcal" : " " + n.unit}</span></div>
-          <div class="mini-bar" aria-hidden="true"><i style="width:${pct}%; background:${color}"></i></div>
-        </div>
-        <div class="ps-value" style="color:${totals ? "var(--ink)" : "var(--muted)"}">${totals ? Math.round(val) : "—"}</div>
-      </div>`;
-  }).filter(Boolean).join("") || '<p class="empty-hint">Turn on at least one nutrient goal to see your preview.</p>';
-
-  const note = $("#previewNote");
-  if (!state.diets.length && !state.avoids.length){
-    note.textContent = "Plans are built from whole-food building blocks and scaled to your calorie target.";
-  } else {
-    const bits = [];
-    if (state.diets.length) bits.push(DIETS.filter(d => state.diets.includes(d.id)).map(d => d.label.toLowerCase()).join(" + "));
-    if (state.avoids.length) bits.push(`without ${state.avoids.slice(0, 3).join(", ")}${state.avoids.length > 3 ? ` +${state.avoids.length - 3}` : ""}`);
-    note.textContent = `Meals will be ${bits.join(", ")}.`;
-  }
-}
-
-function renderAvoidList(){
-  const host = $("#avoidList");
-  if (!state.avoids.length){
-    host.innerHTML = '<p class="empty-hint">Nothing added yet — that’s fine if you eat everything.</p>';
-    return;
-  }
-  host.innerHTML = state.avoids.map((a, i) => `
-    <span class="avoid-pill">${escapeHtml(a)}
-      <button type="button" data-remove-avoid="${i}" aria-label="Remove ${escapeHtml(a)}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </span>`).join("");
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-}
-
-function renderSetup(focusSel){
-  renderGoalFields();
-  const chips = $("#dietChips");
-  chips.innerHTML = DIETS.map(d => `
-    <button type="button" class="chip" data-diet="${d.id}" aria-pressed="${state.diets.includes(d.id)}">
-      <span class="chip-dot" aria-hidden="true"></span>${d.label}
-    </button>`).join("");
-
-  const toggles = $("#slotToggles");
-  toggles.innerHTML = SLOTS.map(s => `
-    <div class="toggle-row">
-      <div>
-        <div class="t-label">${s.label}</div>
-        <div class="t-sub">${s.time}</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" data-slot="${s.id}" ${state.slots[s.id] ? "checked" : ""} aria-label="Include ${s.label} in the plan" />
-        <span class="track" aria-hidden="true"></span><span class="thumb" aria-hidden="true"></span>
-      </label>
-    </div>`).join("");
-
-  renderAvoidList();
-  renderPreview();
-  if (focusSel){
-    const target = document.querySelector(focusSel);
-    if (target) target.focus({ preventScroll:true });
-  }
-}
-</script>
-<script>
-"use strict";
-
-/* ============================================================
-   Plan screen rendering
-   ============================================================ */
-function statusClass(kind, val, goal){
-  if (!goal) return "under";
-  if (goal.mode === "limit") return val > goal.value ? "over" : "good";
-  if (val >= goal.value * 0.9) return "good";
-  if (val >= goal.value * 0.6) return "near";
-  return "under";
-}
-
-function renderMacros(totals){
-  const keys=["protein","carbs","fat","fiber"],host=$("#macroGrid");
-  host.innerHTML=keys.map(k=>{
-    const n=NUTRIENTS.find(x=>x.key===k),g=goalOf(k),val=totals[k],shown=formatNutrientAmount(val,n.unit);
-    if(!g)return `<div class="macro"><div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${shown} ${n.unit}</span></div><div class="m-track" aria-hidden="true"><div class="m-fill under" style="width:0%"></div></div></div>`;
-    const pct=clamp((val/Math.max(g.value,1))*100,0,100),cls=statusClass(k,val,g),remain=g.value-val;
-    const goalText=formatNutrientAmount(g.value,n.unit),gapText=formatNutrientAmount(Math.abs(remain),n.unit);
-    const caption=g.mode==="limit"?(remain>=0?`${gapText} ${n.unit} left`:`${gapText} ${n.unit} over`):(remain>0?`${gapText} ${n.unit} to go`:"Goal met");
-    return `<div class="macro"><div class="m-top"><span class="m-name">${n.label}</span><span class="m-val">${shown} <small>/ ${goalText} ${n.unit}</small></span></div><div class="m-track" role="img" aria-label="${n.label}: ${shown} ${n.unit} of ${goalText} ${n.unit} ${g.mode==="limit"?"limit":"goal"}, ${caption}"><div class="m-fill ${cls}" style="width:${pct}%"></div></div><span class="limit-caption">${caption}</span></div>`;
-  }).join("");
-}
-
-function renderRing(totals){
-  const g = goalOf("calories");
-  const total = Math.round(totals.cal);
-  const goal = g ? g.value : 0;
-  const ratio = goal ? clamp(total / goal, 0, 1.35) : 0;
-  const circumference = 2 * Math.PI * 54;
-  const ring = $("#ringFg");
-  ring.style.strokeDasharray = circumference;
-  ring.style.strokeDashoffset = circumference * (1 - Math.min(ratio, 1));
-  $("#ringPct").textContent = goal ? `${Math.round((total / goal) * 100)}%` : "—";
-  $("#calTotal").textContent = total.toLocaleString();
-  $("#calSub").innerHTML = goal
-    ? `of <b>${goal.toLocaleString()}</b> kcal goal · <span style="color:${total > goal * 1.05 ? "var(--over)" : "var(--olive-dark)"}">${total > goal ? `${(total - goal).toLocaleString()} over` : `${(goal - total).toLocaleString()} left`}</span>`
-    : "Calorie goal turned off";
-}
-
-function renderPlanTable(totals){
-  const plan = ensurePlan();
-  const body = $("#planBody");
-  const foot = $("#planFoot");
-  const calGoal = goalOf("calories")?.value || 2000;
-
-  body.innerHTML = plan.rows.map((r, idx) => {
-    const slot = SLOTS.find(s => s.id === r.slotId) || SLOTS[0];
-    const m = mealById(r.mealId);
-    if (!m){
-      return `<tr class="row-in" style="animation-delay:${idx * 60}ms">
-        <td class="cell-slot"><div class="meal-slot"><span class="slot-name">${slot.label}</span><span class="slot-time">${slot.time}</span></div></td>
-        <td class="cell-meal" colspan="6">
-          <div class="meal-name">No match for your filters</div>
-          <p class="meal-desc">Nothing in this slot fits every preference you selected. Try loosening one filter on the goals screen.</p>
-        </td>
-        <td class="cell-actions"><div class="row-actions"><button class="btn btn-sm" type="button" data-go="setup">Adjust filters</button></div></td>
-      </tr>`;
-    }
-    const s = scaled(m, r.mult);
-    return `<tr class="row-in" data-row="${r.slotId}" style="animation-delay:${idx * 70}ms">
-      <td class="cell-slot">
-        <div class="meal-slot"><span class="slot-name">${slot.label}</span><span class="slot-time">${slot.time}</span></div>
-      </td>
-      <td class="cell-meal">
-        <div class="meal-name"><span class="emoji" aria-hidden="true">${m.emoji}</span>${escapeHtml(m.name)}</div>
-        <p class="meal-desc">${escapeHtml(m.desc)}</p>
-        <div class="meal-tags">
-          ${m.diets.slice(0, 2).map(d => `<span class="tag green">${labelForDiet(d)}</span>`).join("")}
-          ${m.allergens.length ? `<span class="tag terra">contains ${m.allergens.slice(0, 2).join(", ")}</span>` : ""}
-        </div>
-      </td>
-      <td class="portion-cell">
-        <span class="portion-label">${portionText(m, r.mult)}</span>
-        <div class="stepper" role="group" aria-label="Portion for ${escapeHtml(m.name)}">
-          <button type="button" data-step="-1" data-slot="${r.slotId}" aria-label="Reduce portion of ${escapeHtml(m.name)}" ${r.mult <= 0.5 ? "disabled" : ""}>−</button>
-          <span class="step-val" aria-live="polite">${Math.round(r.mult * 100)}%</span>
-          <button type="button" data-step="1" data-slot="${r.slotId}" aria-label="Increase portion of ${escapeHtml(m.name)}" ${r.mult >= 2 ? "disabled" : ""}>+</button>
-        </div>
-      </td>
-      <td class="num" data-label="Calories">${Math.round(s.cal)}</td>
-      <td class="num" data-label="Protein">${Math.round(s.protein)} g</td>
-      <td class="num" data-label="Carbs">${Math.round(s.carbs)} g</td>
-      <td class="num" data-label="Fat">${Math.round(s.fat)} g</td>
-      <td class="cell-actions">
-        <div class="row-actions">
-          <button class="detail-btn" type="button" data-detail="${r.slotId}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/></svg>
-            <span class="sr-only">Details for </span>${m.ingredients.length} items
-          </button>
-          <button class="btn btn-sm swap-btn" type="button" data-swap="${r.slotId}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/></svg>
-            Swap
-          </button>
-        </div>
-      </td>
-    </tr>`;
-  }).join("");
-
-  const goalCal = goalOf("calories");
-  const diff = totals.cal - (goalCal?.value || 0);
-  const diffText = !goalCal ? "" : Math.abs(diff) < (goalCal.value * 0.05)
-    ? `right on your ${goalCal.value.toLocaleString()} kcal goal`
-    : diff > 0 ? `${Math.round(diff)} kcal above your goal`
-    : `${Math.round(-diff)} kcal below your goal`;
-
-  foot.innerHTML = `<tr>
-    <th scope="row" style="text-align:left; padding:16px 12px 16px 24px; font-size:.76rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); border-top:2px solid var(--line-strong)">Day total</th>
-    <td colspan="2" style="border-top:2px solid var(--line-strong)"><span class="muted small">${diffText}</span></td>
-    <td class="num" data-label="Calories" style="border-top:2px solid var(--line-strong)"><strong>${Math.round(totals.cal)}</strong></td>
-    <td class="num" data-label="Protein" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.protein,"g")} g</strong></td>
-    <td class="num" data-label="Carbs" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.carbs,"g")} g</strong></td>
-    <td class="num" data-label="Fat" style="border-top:2px solid var(--line-strong)"><strong>${formatNutrientAmount(totals.fat,"g")} g</strong></td>
-    <td style="border-top:2px solid var(--line-strong)"></td>
-  </tr>`;
-
-  $("#planSummary").textContent = (() => {
-    const n = ensurePlan().rows.filter(r => r.mealId).length;
-    return `${n} ${n === 1 ? "meal or snack" : "meals & snacks"} · ${Math.round(totals.cal).toLocaleString()} kcal estimated`;
-  })();
-}
-
-function labelForDiet(id){
-  const d = DIETS.find(x => x.id === id);
-  return d ? d.label : id;
-}
-
-function portionText(m, mult){
-  const first = m.ingredients[0];
-  const qty = first[1];
-  const match = String(qty).match(/^([\d.]+)\s*(.*)$/);
-  if (!match) return qty;
-  const num = parseFloat(match[1]);
-  const rest = match[2];
-  const scaledNum = num * mult;
-  const pretty = Number.isInteger(scaledNum) ? scaledNum : Math.round(scaledNum * 10) / 10;
-  return `${pretty} ${rest} · ${Math.round(mult * 100)}%`;
-}
-
-function renderLimitMeters(totals){
-  const host=$("#limitMeters");
-  const limits=NUTRIENTS.filter(n=>state.goals[n.key].on&&state.goals[n.key].mode==="limit");
-  if(!limits.length){host.innerHTML='<p class="empty-hint">No limits set. Turn on sugar or sodium on the goals screen to watch them here.</p>';return}
-  host.innerHTML=limits.map(n=>{
-    const g=state.goals[n.key],actual=totals[n.key],shown=formatNutrientAmount(actual,n.unit),goalText=formatNutrientAmount(g.value,n.unit);
-    const pct=clamp((actual/Math.max(g.value,1))*100,0,100),over=actual>g.value,within=pct>=85&&!over,color=over?"var(--over)":within?"var(--gold)":"var(--olive)",gapText=formatNutrientAmount(Math.abs(g.value-actual),n.unit);
-    return `<div style="margin-bottom:14px"><div class="limit-row"><span class="l-name">${n.label}</span><span class="l-val" style="color:${color}">${shown} <span style="color:var(--muted);font-weight:600">/ ${goalText} ${n.unit}</span></span></div><div class="limit-track" role="img" aria-label="${n.label}: ${shown} of ${goalText} ${n.unit} limit, ${over?"over the limit":`${gapText} ${n.unit} remaining`}"><div class="limit-fill" style="width:${pct}%;background:${color}"></div></div><div class="limit-caption">${over?`${gapText} ${n.unit} over your limit`:`${gapText} ${n.unit} remaining today`}</div></div>`;
-  }).join("");
-}
-
-function renderPlanCompliance(totals){
-  const host=$("#planCompliance");if(!host)return;
-  const issues=unmetGoals(totals);
-  if(!issues.length){
-    host.className="plan-compliance is-success";
-    host.innerHTML="<strong>All selected goals and limits are met.</strong><p>This plan satisfies every active setting with its current portions.</p>";
-    return;
-  }
-  host.className="plan-compliance is-warning";
-  const detail=state.plan?.checkedAllMealChoicesAtSuggestedPortions
-    ? "All available meals were checked at their suggested portions, then the closest options were checked at alternate serving sizes."
-    : "This plan currently does not meet every active setting.";
-  host.innerHTML=`<strong>Exact match not available</strong><p>${detail} The remaining gaps are:</p><ul>${issues.map(issue=>`<li>${escapeHtml(issue.text)}</li>`).join("")}</ul>`;
-}
-function renderPlan(){
-  const totals = planTotals();
-  renderPlanCompliance(totals);
-  const dateEl = $("#planDate");
-  if (dateEl){
-    dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
-  }
-  renderRing(totals);
-  renderMacros(totals);
-  renderPlanTable(totals);
-  renderLimitMeters(totals);
-  const tag = $("#dietTag");
-  tag.textContent = state.diets.length
-    ? DIETS.filter(d => state.diets.includes(d.id)).map(d => d.label).join(" · ")
-    : "Balanced";
-  const ann = $("#planAnnounce");
-  if (ann) ann.textContent = `Plan updated: ${Math.round(totals.cal)} calories, ${Math.round(totals.protein)} grams protein, ${ensurePlan().rows.length} meals and snacks.`;
-}
-</script>
-<script>
-"use strict";
-
-/* ============================================================
-   Detail dialog
-   ============================================================ */
-const dlg = $("#detailDialog");
-
-function openDetail(slotId, opts = {}){
-  const plan = ensurePlan();
-  const row = plan.rows.find(r => r.slotId === slotId);
-  const m = row && mealById(row.mealId);
-  if (!row || !m) return;
-  const slot = SLOTS.find(s => s.id === slotId);
-  const s = scaled(m, row.mult);
-  if (!opts.keepFocus) lastFocused = document.activeElement;
-
-  const rows = m.ingredients.map(([name, qty]) => {
-    const numMatch = String(qty).match(/^([\d.]+)\s*(.*)$/);
-    let shown = qty;
-    if (numMatch){
-      const n = parseFloat(numMatch[1]) * row.mult;
-      const pretty = Number.isInteger(n) ? n : Math.round(n * 10) / 10;
-      shown = `${pretty} ${numMatch[2]}`;
-    }
-    return `<div class="ing-row"><span class="ing-name">${escapeHtml(name)}</span><span class="ing-amt">${escapeHtml(shown)}</span></div>`;
-  }).join("");
-
-  const nutri = [
-    ["Calories", Math.round(s.cal), "kcal"],
-    ["Protein", Math.round(s.protein), "g"],
-    ["Carbs", Math.round(s.carbs), "g"],
-    ["Fat", Math.round(s.fat), "g"],
-    ["Fiber", Math.round(s.fiber), "g"],
-    ["Sugar", Math.round(s.sugar), "g"],
-    ["Sodium", Math.round(s.sodium), "mg"],
-  ].map(([label, val, unit]) => `<div class="nm"><b>${val.toLocaleString()}</b><span>${label} ${unit}</span></div>`).join("");
-
-  const conflict = row.mult;
-  dlg.innerHTML = `
-    <div class="dlg-inner">
-      <div class="dlg-head">
-        <span class="emoji-lg" aria-hidden="true">${m.emoji}</span>
-        <div>
-          <h2 id="dlgTitle">${escapeHtml(m.name)}</h2>
-          <p class="dlg-sub">${slot.label} · ${slot.time} · ${Math.round(conflict * 100)}% portion</p>
-        </div>
-        <button class="icon-btn dlg-close" type="button" data-close-dialog aria-label="Close details">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
-      <div class="dlg-body">
-        <div class="dlg-section">
-          <h3>Ingredients &amp; amounts</h3>
-          <div class="ing-list">${rows}</div>
-        </div>
-        <div class="dlg-section">
-          <h3>Estimated nutrition at this portion</h3>
-          <div class="nutri-mini">${nutri}</div>
-        </div>
-        <div class="portion-row">
-          <div>
-            <div class="pr-label">Portion</div>
-            <div class="pr-sub">Adjust how much of this meal you’ll eat.</div>
-          </div>
-          <div class="stepper">
-            <button type="button" data-step="-1" data-slot="${slotId}" aria-label="Reduce portion" ${row.mult <= 0.5 ? "disabled" : ""}>−</button>
-            <span class="step-val" aria-live="polite">${Math.round(row.mult * 100)}%</span>
-            <button type="button" data-step="1" data-slot="${slotId}" aria-label="Increase portion" ${row.mult >= 2 ? "disabled" : ""}>+</button>
-          </div>
-        </div>
-        <p style="font-size:.76rem; color:var(--muted)">Contains: ${m.allergens.length ? m.allergens.join(", ") : "no common allergens"}. Values are approximate.</p>
-      </div>
-      <div class="dlg-foot">
-        <button class="btn btn-sm" type="button" data-close-dialog>Close</button>
-        <span class="spacer"></span>
-        <button class="btn btn-sm btn-primary" type="button" data-swap="${slotId}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="m13 4 4 4-4 4"/><path d="M20 16H7"/><path d="m11 12-4 4 4 4"/></svg>
-          Try something else
-        </button>
-      </div>
-    </div>`;
-  if (!dlg.open){
-    if (typeof dlg.showModal === "function") dlg.showModal();
-    else dlg.setAttribute("open", "");
-    const closeBtn = dlg.querySelector(".dlg-close");
-    if (closeBtn) closeBtn.focus();
-  } else if (opts.keepFocus){
-    const active = document.activeElement?.dataset?.step;
-    const nextBtn = dlg.querySelector(`.stepper [data-step="${active}"]`) || dlg.querySelector(".dlg-close");
-    if (nextBtn) nextBtn.focus();
-  }
-}
-
-function closeDialog(){
-  if (typeof dlg.close === "function" && dlg.open) dlg.close();
-  else dlg.removeAttribute("open");
-  if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
-}
-
-/* ============================================================
-   Swap + portion
-   ============================================================ */
 function swapRow(slotId){
   const plan=ensurePlan(),row=plan.rows.find(r=>r.slotId===slotId);
-  if(!row)return;
-  const alt=candidatesFor(slotId).filter(m=>m.id!==row.mealId);
-  if(!alt.length){toast("That’s the only option that fits your current filters.","info");return}
-  const calGoal=goalOf("calories")?.value||2000,slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1,slot=SLOTS.find(s=>s.id===slotId),target=calGoal*(slot.share/totalShare);
-  const before=totalsForRows(plan.rows),wasCompliant=goalsAreMet(before),beforeGap=goalsGapScore(before);
-  const choices=alt.map(meal=>{
-    const previous={mealId:row.mealId,mult:row.mult};
-    row.mealId=meal.id;row.mult=bestPortion(meal,target);
-    const totals=totalsForRows(plan.rows),choice={meal,mult:row.mult,compliant:goalsAreMet(totals),gap:goalsGapScore(totals),fit:scoreMeal(meal,target,slot)};
-    row.mealId=previous.mealId;row.mult=previous.mult;return choice;
+  if(!row||!row.mealId)return;
+  const before=totalsFor(plan.rows),beforeGap=goalsGapScore(before),wasMet=goalsAreMet(before);
+  const slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1,slot=SLOTS.find(s=>s.id===slotId);
+  const target=(goalOf("calories")?.value||2000)*slot.share/totalShare;
+  const options=candidatesFor(slotId).filter(m=>m.id!==row.mealId).map(m=>{
+    const old={mealId:row.mealId,mult:row.mult};
+    row.mealId=m.id;row.mult=bestPortion(m,target);
+    const t=totalsFor(plan.rows),candidate={meal:m,mult:row.mult,met:goalsAreMet(t),gap:goalsGapScore(t),fit:scoreMeal(m,target,slot)};
+    row.mealId=old.mealId;row.mult=old.mult;
+    return candidate;
   }).sort((a,b)=>{
-    if(wasCompliant&&a.compliant!==b.compliant)return a.compliant?-1:1;
-    return a.gap-b.gap||a.fit-b.fit;
+    if(wasMet&&a.met!==b.met)return a.met?-1:1;
+    return a.gap-b.gap||a.fit-b.fit
   });
-  const next=choices.find(choice=>wasCompliant?choice.compliant:choice.gap<beforeGap-1e-8);
-  if(!next){toast("No swap can keep or move this plan closer to every goal.","info");return}
-  row.mealId=next.meal.id;row.mult=next.mult;plan.compliant=next.compliant;
-  const tr=document.querySelector(`tr[data-row="${slotId}"]`);
-  if(tr){tr.classList.remove("row-swap");void tr.offsetWidth;tr.classList.add("row-swap")}
-  if(dlg.open)closeDialog();renderPlan();queueSave();toast(`Swapped in ${next.meal.name}`,"swap");
+  const next=options.find(o=>wasMet?o.met:o.gap<beforeGap-1e-8);
+  if(!next){showToast("No alternative keeps this day within every goal.");return}
+  row.mealId=next.meal.id;row.mult=next.mult;plan.compliant=next.met;plan.sig=signature();
+  saveState();renderPlan();showToast("Changed to "+next.meal.name+".");
 }
-
-function stepPortion(slotId, dir){
+function stepPortion(slotId,dir){
   const plan=ensurePlan(),row=plan.rows.find(r=>r.slotId===slotId);
   if(!row)return;
-  const previous=row.mult,before=totalsForRows(plan.rows);
+  const previous=row.mult,before=totalsFor(plan.rows);
   row.mult=clamp(Math.round((row.mult+dir*.25)*4)/4,.25,3);
   if(row.mult===previous)return;
-  const after=totalsForRows(plan.rows);
+  const after=totalsFor(plan.rows);
   if((goalsAreMet(before)&&!goalsAreMet(after))||(!goalsAreMet(before)&&goalsGapScore(after)>=goalsGapScore(before)-1e-8)){
-    row.mult=previous;toast("That portion would move the plan farther from your goals.","info");return;
+    row.mult=previous;showToast("That portion would miss one of your active goals.");return
   }
-  plan.compliant=goalsAreMet(after);
-  renderPlan();if(dlg.open)refreshDialogPortion(slotId);queueSave();
+  plan.compliant=goalsAreMet(after);plan.sig=signature();saveState();renderPlan();
 }
 
-function refreshDialogPortion(slotId){
-  const plan = ensurePlan();
-  const row = plan.rows.find(r => r.slotId === slotId);
-  const m = row && mealById(row.mealId);
-  if (!row || !m) return;
-  openDetail(slotId, { keepFocus:true });
+function renderTargets(){
+  $("#targets").innerHTML=NUTRIENTS.map(n=>{
+    const g=state.goals[n.key];
+    const options='<option value="reach" '+(g.mode==="reach"?"selected":"")+'>At least</option><option value="limit" '+(g.mode==="limit"?"selected":"")+'>At most</option>';
+    return '<div class="target"><input type="checkbox" data-enabled="'+n.key+'" aria-label="Track '+n.label+'" '+(g.on?"checked":"")+'>'
+      +'<label class="target-name" for="value-'+n.key+'">'+n.label+'</label>'
+      +'<div class="unit-label"><input id="value-'+n.key+'" type="number" min="0" max="20000" step="'+(n.unit==="kcal"?50:n.unit==="mg"?100:1)+'" data-value="'+n.key+'" value="'+g.value+'" '+(!g.on?"disabled":"")+'><span>'+n.unit+'</span></div>'
+      +'<select data-mode="'+n.key+'" aria-label="'+n.label+' direction" '+(!g.on?"disabled":"")+'>'+options+'</select></div>'
+  }).join("");
 }
-
-/* rescale portions when the calorie target changes, preserving the chosen meals */
-function rescalePortions(){
-  const plan = state.plan;
-  if (!plan) return;
-  const calGoal = goalOf("calories")?.value || 2000;
-  const slots = enabledSlots();
-  const totalShare = slots.reduce((a, s) => a + s.share, 0);
-  for (const r of plan.rows){
-    const m = mealById(r.mealId);
-    const slot = SLOTS.find(s => s.id === r.slotId);
-    if (!m || !slot) continue;
-    r.mult = clamp(Math.round((calGoal * (slot.share / totalShare) / Math.max(m.base.cal, 1)) * 4) / 4, 0.5, 2);
-  }
+function renderChips(id,items,selected,attr){
+  $(id).innerHTML=items.map(item=>'<button class="chip" type="button" data-'+attr+'="'+item.id+'" aria-pressed="'+selected.includes(item.id)+'">'+escapeHtml(item.label)+'</button>').join("");
 }
-
-/* ============================================================
-   Events: setup
-   ============================================================ */
-function bind(){
-  document.addEventListener("click", (e) => {
-    const nav = e.target.closest("[data-go]");
-    if (nav){
-      e.preventDefault();
-      goTo(nav.dataset.go);
-      return;
-    }
-    const modeBtn = e.target.closest("[data-mode]");
-    if (modeBtn){
-      const key = modeBtn.dataset.mode;
-      const g = state.goals[key];
-      g.mode = g.mode === "limit" ? "reach" : "limit";
-      renderGoalFields(key);
-      renderPreview();
-      const again = document.querySelector(`[data-mode="${key}"]`);
-      if (again) again.focus({ preventScroll:true });
-      queueSave();
-      toast(`${labelOf(key)} now ${g.mode === "limit" ? "a limit to stay under" : "a target to reach"}`, "spark");
-      return;
-    }
-    const dietBtn = e.target.closest("[data-diet]");
-    if (dietBtn){
-      const id = dietBtn.dataset.diet;
-      const i = state.diets.indexOf(id);
-      if (i >= 0) state.diets.splice(i, 1);
-      else state.diets.push(id);
-      renderSetup(`[data-diet="${id}"]`);
-      invalidatePlanSilently();
-      queueSave();
-      return;
-    }
-    const rm = e.target.closest("[data-remove-avoid]");
-    if (rm){
-      const i = Number(rm.dataset.removeAvoid);
-      state.avoids.splice(i, 1);
-      renderAvoidList();
-      renderPreview();
-      invalidatePlanSilently();
-      queueSave();
-      return;
-    }
-    const step = e.target.closest("[data-step]");
-    if (step){
-      stepPortion(step.dataset.slot, Number(step.dataset.step));
-      return;
-    }
-    const swap = e.target.closest("[data-swap]");
-    if (swap){
-      swapRow(swap.dataset.swap);
-      return;
-    }
-    const detail = e.target.closest("[data-detail]");
-    if (detail){
-      openDetail(detail.dataset.detail);
-      return;
-    }
-    if (e.target.closest("[data-close-dialog]")){ closeDialog(); return; }
-  });
-
-  /* quantity/goal inputs */
-  $("#goalFields").addEventListener("input", (e) => {
-    const input = e.target.closest("[data-goal]");
-    if (!input) return;
-    const key = input.dataset.goal;
-    const val = clamp(Math.round(Number(input.value) || 0), 0, 20000);
-    state.goals[key].value = val;
-    state.goals[key].on = val > 0;
-    invalidatePlanSilently();
-    renderPreview();
-    queueSave();
-  });
-  $("#goalFields").addEventListener("change", (e) => {
-    const input = e.target.closest("[data-goal]");
-    if (!input) return;
-    const key = input.dataset.goal;
-    input.value = state.goals[key].value;
-    if (key === "calories" && state.plan){
-      rescalePortions();
-      if (currentScreen === "plan") renderPlan();
-    }
-    invalidatePlanSilently();
-    queueSave();
-    toast(`${labelOf(key)} goal set to ${state.goals[key].value.toLocaleString()}${unitOf(key)}`, "check");
-  });
-
-  $("#slotToggles").addEventListener("change", (e) => {
-    const cb = e.target.closest("[data-slot]");
-    if (!cb) return;
-    const id = cb.dataset.slot;
-    if (!cb.checked && SLOTS.filter(s => state.slots[s.id] && s.id !== id).length === 0){
-      cb.checked = true;
-      toast("Keep at least one meal in your day.", "info");
-      return;
-    }
-    state.slots[id] = cb.checked;
-    invalidatePlanSilently();
-    queueSave();
-  });
-
-  $("#addAvoid").addEventListener("click", addAvoid);
-  $("#avoidInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter"){ e.preventDefault(); addAvoid(); }
-  });
-
-  $("#resetGoals").addEventListener("click", () => {
-    state.goals = defaultState().goals;
-    renderGoalFields();
-    renderPreview();
-    invalidatePlanSilently();
-    queueSave();
-    toast("Goals back to defaults", "check");
-  });
-
-  $("#buildPlan").addEventListener("click", () => {
-    state.seed += 1;
-    state.plan = buildPlan(state.seed);
-    state.plan.sig = filterSignature();
-    save();
-    goTo("plan");
-    toast("Your day is ready", "spark");
-  });
-
-  $("#shufflePlan").addEventListener("click", () => {
-    state.seed += 1;
-    state.plan = buildPlan(state.seed);
-    state.plan.sig = filterSignature();
-    save();
-    renderPlan();
-    toast("Here’s a fresh mix for today", "spark");
-  });
-
-  $("#resetPlan").addEventListener("click", () => {
-    state.seed += 1;
-    state.plan = buildPlan(state.seed);
-    state.plan.sig = filterSignature();
-    save();
-    renderPlan();
-    toast("Plan rebuilt against your goals", state.plan.compliant ? "check" : "info");
-  });
-
-  $("#printPlan").addEventListener("click", () => window.print());
-
-  dlg.addEventListener("click", (e) => { if (e.target === dlg) closeDialog(); });
-  dlg.addEventListener("close", () => {
-    if (lastFocused && document.contains(lastFocused)) lastFocused.focus();
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && dlg.open) closeDialog();
-  });
-
-  window.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){
-      e.preventDefault();
-      $("#avoidInput").focus();
-    }
-  });
+function renderAvoids(){
+  $("#avoid-list").innerHTML=state.avoids.map((item,index)=>'<span class="avoid-item">'+escapeHtml(item)+'<button type="button" data-remove-avoid="'+index+'" aria-label="Remove '+escapeHtml(item)+'">×</button></span>').join("");
 }
-
-function invalidatePlanSilently(){
-  /* mark the current plan as stale so it is rebuilt from the new filters next time it is shown */
-  if (state.plan) state.plan.sig = null;
+function renderSlots(){
+  $("#slot-options").innerHTML=SLOTS.map(s=>'<label class="slot-option"><input type="checkbox" data-slot="'+s.id+'" '+(state.slots[s.id]?"checked":"")+'> '+s.label+'</label>').join("");
 }
+function renderSettings(){renderTargets();renderChips("#diet-options",DIETS,state.diets,"diet");renderChips("#allergen-options",ALLERGENS.map(x=>({id:x,label:x==="tree nuts"?"Tree nuts":x[0].toUpperCase()+x.slice(1)})),state.allergens,"allergen");renderAvoids();renderSlots()}
 
-function addAvoid(){
-  const input = $("#avoidInput");
-  const raw = input.value.trim().replace(/\s+/g, " ");
-  if (!raw) return;
-  if (raw.length > 40){ toast("Keep it short — 40 characters or fewer.", "info"); return; }
-  if (state.avoids.some(a => normalise(a) === normalise(raw))){
-    toast(`“${raw}” is already on your list.`, "info");
-    input.value = "";
+function renderStatus(plan,totals){
+  const host=$("#status"),issues=unmetGoals(totals);
+  if(plan.sig!==signature()){
+    host.className="status status-stale";
+    host.innerHTML="<strong>Settings changed</strong><p>Build a new plan to apply them.</p>";
     return;
   }
-  if (state.avoids.length >= 12){ toast("You can track up to 12 foods.", "info"); return; }
-  state.avoids.push(raw);
-  input.value = "";
-  renderAvoidList();
-  renderPreview();
-  queueSave();
-  invalidatePlanSilently();
-  toast(`We’ll keep ${raw} out`, "check");
-}
-
-function labelOf(key){
-  return (NUTRIENTS.find(n => n.key === key) || {}).label || key;
-}
-function unitOf(key){
-  const u = (NUTRIENTS.find(n => n.key === key) || {}).unit;
-  return u === "kcal" ? " kcal" : ` ${u}`;
-}
-
-/* ============================================================
-   Init
-   ============================================================ */
-function init(){
-  ensurePlan();
-  renderSetup();
-  bind();
-  renderPlan();
-  const hash = location.hash.replace("#", "");
-  if (hash === "plan"){
-    const setup = $("#screen-setup");
-    setup.classList.remove("is-active");
-    setup.hidden = true;
-    const planScreen = $("#screen-plan");
-    planScreen.hidden = false;
-    planScreen.classList.add("is-active");
-    currentScreen = "plan";
-    $$(".nav-btn").forEach(b => {
-      if (b.dataset.go === "plan") b.setAttribute("aria-current", "page");
-      else b.removeAttribute("aria-current");
-    });
+  if(!issues.length){
+    host.className="status status-good";
+    host.innerHTML="<strong>All active goals and limits are met.</strong><p>Current portions satisfy the selected settings.</p>";
+    return;
   }
-  save();
+  const detail=plan.checked>0?"The closest meal combinations were checked at alternate portion sizes.":"Every meal combination was checked at its suggested portions.";
+  host.className="status status-warn";
+  host.innerHTML="<strong>No fully matching plan found</strong><p>"+detail+" Gaps in this plan:</p><ul>"+issues.map(x=>"<li>"+escapeHtml(x.text)+"</li>").join("")+"</ul>";
 }
-
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-else init();
+function renderSummary(totals){
+  const entries=[["Calories","cal","kcal"],["Protein","protein","g"],["Carbs","carbs","g"],["Fat","fat","g"],["Fiber","fiber","g"]];
+  $("#summary").innerHTML=entries.map(x=>{
+    const goal=goalOf(x[1]==="cal"?"calories":x[1]),target=goal?"/ "+format(goal.value,x[2])+" "+x[2]:"";
+    return '<div class="stat"><span class="stat-label">'+x[0]+'</span><strong class="stat-value">'+format(totals[x[1]],x[2])+' <small>'+target+'</small></strong></div>'
+  }).join("");
+  const limits=NUTRIENTS.filter(n=>state.goals[n.key].on&&state.goals[n.key].mode==="limit");
+  $("#limit-strip").innerHTML=limits.length?limits.map(n=>{
+    const value=totals[n.key],goal=state.goals[n.key].value,over=value>goal;
+    return '<div class="limit-stat"><span>'+n.label+' · '+format(goal,n.unit)+' '+n.unit+' max</span><strong class="'+(over?"over":"")+'">'+format(value,n.unit)+' '+n.unit+(over?" · "+format(value-goal,n.unit)+" over":"")+'</strong></div>'
+  }).join(""):'<div class="limit-stat"><span>No active limits</span><strong>Set an “At most” goal to track a ceiling.</strong></div>';
+}
+function formatQty(qty,mult){
+  const match=String(qty).match(/^([\d.]+)\s*(.*)$/);
+  if(!match)return qty;
+  const number=Number(match[1])*mult,pretty=Math.round(number*10)/10;
+  return pretty+" "+match[2];
+}
+function renderRows(plan,totals){
+  $("#meal-rows").innerHTML=plan.rows.map(row=>{
+    const slot=SLOTS.find(s=>s.id===row.slotId),m=mealById(row.mealId);
+    if(!m)return '<tr><td class="time">'+slot.time+'</td><td colspan="7" class="empty-meal">No meal fits the selected filters.</td></tr>';
+    const nutrients=scaled(m,row.mult);
+    const ingredients=m.ingredients.map(i=>escapeHtml(formatQty(i[1],row.mult))+" "+escapeHtml(i[0])).join(" · ");
+    const tags=m.allergens.map(a=>'<span class="tag tag-alert">'+escapeHtml(a)+'</span>').join("");
+    const disabled=plan.sig!==signature()?"disabled":"";
+    return '<tr><td class="time">'+slot.time+'<br>'+slot.label+'</td>'
+      +'<td><div class="meal-title">'+m.emoji+' '+escapeHtml(m.name)+'</div><div class="meal-sub">'+ingredients+'</div><div class="meal-tags">'+tags+'</div></td>'
+      +'<td><div class="portion"><button type="button" data-step="-1" data-slot="'+slot.id+'" aria-label="Reduce portion" '+(row.mult<=.5||disabled?"disabled":"")+'>−</button><output>'+Math.round(row.mult*100)+'%</output><button type="button" data-step="1" data-slot="'+slot.id+'" aria-label="Increase portion" '+(row.mult>=2||disabled?"disabled":"")+'>+</button></div></td>'
+      +'<td class="num">'+format(nutrients.cal,"kcal")+'</td><td class="num">'+format(nutrients.protein,"g")+' g</td><td class="num">'+format(nutrients.carbs,"g")+' g</td><td class="num">'+format(nutrients.fat,"g")+' g</td>'
+      +'<td><button type="button" class="swap" data-swap="'+slot.id+'" '+disabled+'>Swap</button></td></tr>'
+  }).join("");
+  $("#table-total").innerHTML='<tr><th scope="row">Day total</th><td colspan="2"></td><td class="num"><strong>'+format(totals.cal,"kcal")+'</strong></td><td class="num"><strong>'+format(totals.protein,"g")+' g</strong></td><td class="num"><strong>'+format(totals.carbs,"g")+' g</strong></td><td class="num"><strong>'+format(totals.fat,"g")+' g</strong></td><td></td></tr>';
+  $("#plan-subtitle").textContent=plan.rows.filter(r=>r.mealId).length+" meals and snacks · portions are adjustable in 25% steps";
+}
+function renderPlan(){
+  const plan=state.plan;
+  if(!plan)return;
+  const totals=totalsFor(plan.rows);
+  renderSummary(totals);renderStatus(plan,totals);renderRows(plan,totals);
+}
+function showToast(message){
+  document.querySelector(".toast")?.remove();
+  const el=document.createElement("div");el.className="toast";el.setAttribute("role","status");el.textContent=message;
+  document.body.append(el);toastTimer=window.setTimeout(()=>el.remove(),2600);
+}
+function generatePlan(newSeed){
+  const button=$("#generate"),old=button.textContent;
+  button.disabled=true;button.textContent="Building…";
+  window.setTimeout(()=>{
+    state.seed+=newSeed?1:0;
+    state.plan=buildPlan(state.seed);
+    state.plan.sig=signature();
+    saveState();renderPlan();
+    button.disabled=false;button.textContent=old;
+  },25);
+}
+function handleClick(e){
+  const diet=e.target.closest("[data-diet]");
+  if(diet){toggleItem(state.diets,diet.dataset.diet);renderSettings();markStale();return}
+  const allergen=e.target.closest("[data-allergen]");
+  if(allergen){toggleItem(state.allergens,allergen.dataset.allergen);renderSettings();markStale();return}
+  const remove=e.target.closest("[data-remove-avoid]");
+  if(remove){state.avoids.splice(Number(remove.dataset.removeAvoid),1);renderAvoids();markStale();return}
+  const add=e.target.closest("#add-avoid");
+  if(add){addAvoid();return}
+  const step=e.target.closest("[data-step]");
+  if(step){stepPortion(step.dataset.slot,Number(step.dataset.step));return}
+  const swap=e.target.closest("[data-swap]");
+  if(swap){swapRow(swap.dataset.swap);return}
+  if(e.target.closest("#generate")){generatePlan(true);return}
+  if(e.target.closest("#rebuild")){generatePlan(true);return}
+  if(e.target.closest("#print")){window.print()}
+}
+function toggleItem(list,item){
+  const index=list.indexOf(item);
+  if(index>=0)list.splice(index,1);else list.push(item);
+}
+function addAvoid(){
+  const input=$("#avoid-input"),value=input.value.trim().replace(/\s+/g," ");
+  if(!value)return;
+  if(state.avoids.length>=12){showToast("You can add up to 12 foods.");return}
+  if(state.avoids.some(x=>normalise(x)===normalise(value))){showToast("That food is already listed.");input.value="";return}
+  state.avoids.push(value);input.value="";renderAvoids();markStale();
+}
+function handleSettings(e){
+  const enabled=e.target.closest("[data-enabled]");
+  if(enabled){state.goals[enabled.dataset.enabled].on=enabled.checked;renderTargets();markStale();return}
+  const value=e.target.closest("[data-value]");
+  if(value){
+    const goal=state.goals[value.dataset.value];
+    goal.value=clampNumber(value.value,0);
+    goal.on=goal.value>0;
+    state.plan&&(state.plan.sig=null);
+    saveState();renderStatus(state.plan,totalsFor(state.plan.rows));
+    return;
+  }
+  const mode=e.target.closest("[data-mode]");
+  if(mode){state.goals[mode.dataset.mode].mode=mode.value;markStale();return}
+  const slot=e.target.closest("[data-slot]");
+  if(slot){
+    if(!slot.checked&&!SLOTS.some(s=>s.id!==slot.dataset.slot&&state.slots[s.id])){slot.checked=true;showToast("Keep at least one time in the plan.");return}
+    state.slots[slot.dataset.slot]=slot.checked;markStale();
+  }
+}
+function init(){
+  $("#today").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  renderSettings();
+  document.addEventListener("click",handleClick);
+  document.querySelector(".settings").addEventListener("change",handleSettings);
+  document.querySelector(".settings").addEventListener("input",handleSettings);
+  $("#avoid-input").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addAvoid()}});
+  if(!state.plan||state.plan.sig!==signature()){state.seed+=1;state.plan=buildPlan(state.seed);state.plan.sig=signature();saveState()}
+  renderPlan();
+}
+init();
 </script>
 </body>
 </html>
