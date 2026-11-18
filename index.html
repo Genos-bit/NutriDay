@@ -1193,13 +1193,28 @@ function pseudoRandom(seed){
 function scoreMeal(m, slotCalTarget, slot){
   const b = m.base;
   if (!b.cal) return 1e9;
-  let score = Math.abs(b.cal - slotCalTarget) / Math.max(slotCalTarget, 1);
-  if (state.diets.includes("high-protein")) score -= Math.min(b.protein / Math.max(b.cal, 1), 0.3) * 0.9;
-  if (state.diets.includes("low-carb")) score += Math.min(b.carbs / Math.max(b.cal, 1), 0.6) * 0.5;
-  const sugarGoal = goalOf("sugar"), sodiumGoal = goalOf("sodium");
-  if (sugarGoal?.mode === "limit") score += Math.min(b.sugar / Math.max(sugarGoal.value, 1), 1.5) * 0.16;
-  if (sodiumGoal?.mode === "limit") score += Math.min(b.sodium / Math.max(sodiumGoal.value, 1), 1.5) * 0.14;
-  if (slot?.id === "snack1" && b.cal > 260) score += 0.4;
+  const portion = bestPortion(m, slotCalTarget);
+  const nutrition = scaled(m, portion);
+  let score = Math.abs(nutrition.cal - slotCalTarget) / Math.max(slotCalTarget, 1);
+  const slots = enabledSlots();
+  const totalShare = slots.reduce((sum, item) => sum + item.share, 0) || 1;
+  const share = (slot?.share || 1) / totalShare;
+  for (const key of ["protein", "carbs", "fat", "fiber", "sugar", "sodium"]){
+    const goal = goalOf(key);
+    if (!goal || goal.value <= 0) continue;
+    const target = goal.value * share;
+    const actual = nutrition[key];
+    if (goal.mode === "reach"){
+      /* Reward meals that contribute toward this slot's share of a daily target. */
+      score += Math.max(0, 1 - actual / target) * 0.55;
+    } else {
+      /* Strongly avoid spending too much of a daily limit in one meal. */
+      score += Math.max(0, actual / target - 0.8) * 0.85;
+    }
+  }
+  if (state.diets.includes("high-protein")) score -= Math.min(nutrition.protein / Math.max(nutrition.cal, 1), 0.3) * 0.9;
+  if (state.diets.includes("low-carb")) score += Math.min(nutrition.carbs / Math.max(nutrition.cal, 1), 0.6) * 0.5;
+  if (slot?.id === "snack1" && nutrition.cal > 260) score += 0.4;
   return score;
 }
 
@@ -1241,6 +1256,7 @@ function filterSignature(){
     diets:[...state.diets].sort(),
     avoids:state.avoids.map(normalise).sort(),
     slots:SLOTS.filter(s => state.slots[s.id]).map(s => s.id),
+    goals:Object.fromEntries(Object.entries(state.goals).map(([key, goal]) => [key, { on:goal.on, value:goal.value, mode:goal.mode }])),
   });
 }
 
@@ -1910,8 +1926,8 @@ function bind(){
     const val = clamp(Math.round(Number(input.value) || 0), 0, 20000);
     state.goals[key].value = val;
     state.goals[key].on = val > 0;
+    invalidatePlanSilently();
     renderPreview();
-    /* goals change totals and comparisons, not the meals already chosen */
     queueSave();
   });
   $("#goalFields").addEventListener("change", (e) => {
@@ -1923,6 +1939,7 @@ function bind(){
       rescalePortions();
       if (currentScreen === "plan") renderPlan();
     }
+    invalidatePlanSilently();
     queueSave();
     toast(`${labelOf(key)} goal set to ${state.goals[key].value.toLocaleString()}${unitOf(key)}`, "check");
   });
