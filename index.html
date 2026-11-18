@@ -1226,29 +1226,70 @@ function bestPortion(m, targetCal){
 
 function buildPlan(seed = Date.now() % 100000){
   const slots = enabledSlots();
-  const totalShare = slots.reduce((a, s) => a + s.share, 0);
-  const calGoal = goalOf("calories")?.value || 2000;
+  const totalShare = slots.reduce((a, s) => a + s.share, 0) || 1;
+  const calorieGoal = goalOf("calories")?.value || 2000;
   const rnd = pseudoRandom(seed);
-  const used = [];
+  const options = slots.map(slot => {
+    const targetCal = calorieGoal * (slot.share / totalShare);
+    const meals = candidatesFor(slot.id).map(m => {
+      const mult = bestPortion(m, targetCal);
+      return { row:{ slotId:slot.id, mealId:m.id, mult }, nutrition:scaled(m, mult) };
+    });
+    return meals.length ? meals : [{ row:{ slotId:slot.id, mealId:null, mult:1 }, nutrition:null }];
+  });
+  const totals = { cal:0, protein:0, carbs:0, fat:0, fiber:0, sugar:0, sodium:0 };
+  const counts = new Map();
   const rows = [];
-  for (const slot of slots){
-    const targetCal = calGoal * (slot.share / totalShare);
-    const pool = candidatesFor(slot.id);
-    if (!pool.length){
-      rows.push({ slotId:slot.id, mealId:null, mult:1 });
-      continue;
+  let bestRows = null;
+  let bestScore = Infinity;
+
+  function scoreDay(){
+    let score = 0;
+    for (const [key, totalKey] of [
+      ["calories","cal"], ["protein","protein"], ["carbs","carbs"],
+      ["fat","fat"], ["fiber","fiber"], ["sugar","sugar"], ["sodium","sodium"],
+    ]){
+      const goal = goalOf(key);
+      if (!goal || goal.value <= 0) continue;
+      const ratio = totals[totalKey] / goal.value;
+      if (goal.mode === "limit"){
+        score += Math.max(0, ratio - 0.9) * 4;
+      } else {
+        score += Math.abs(1 - ratio) * (key === "calories" ? 0.75 : 0.45);
+      }
     }
-    const ranked = pool
-      .map(m => {
-        const reuse = used.filter(id => id === m.id).length;
-        return { m, score:scoreMeal(m, targetCal, slot) + reuse * 0.75 + rnd() * 0.16 };
-      })
-      .sort((a, b) => a.score - b.score);
-    const pick = ranked[0].m;
-    used.push(pick.id);
-    rows.push({ slotId:slot.id, mealId:pick.id, mult:bestPortion(pick, targetCal) });
+    for (const count of counts.values()) score += Math.max(0, count - 1) * 0.18;
+    return score;
   }
-  return { seed, rows, builtAt:Date.now() };
+
+  function search(slotIndex){
+    if (slotIndex === options.length){
+      const score = scoreDay() + rnd() * 0.00001;
+      if (score < bestScore){
+        bestScore = score;
+        bestRows = rows.map(row => ({ ...row }));
+      }
+      return;
+    }
+    for (const option of options[slotIndex]){
+      rows.push(option.row);
+      if (option.nutrition){
+        for (const key in totals) totals[key] += option.nutrition[key];
+        counts.set(option.row.mealId, (counts.get(option.row.mealId) || 0) + 1);
+      }
+      search(slotIndex + 1);
+      if (option.nutrition){
+        for (const key in totals) totals[key] -= option.nutrition[key];
+        const count = counts.get(option.row.mealId) - 1;
+        if (count) counts.set(option.row.mealId, count);
+        else counts.delete(option.row.mealId);
+      }
+      rows.pop();
+    }
+  }
+
+  search(0);
+  return { seed, rows:bestRows || [], builtAt:Date.now() };
 }
 
 function filterSignature(){
