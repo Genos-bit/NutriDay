@@ -1236,12 +1236,14 @@ function bestPortion(m, targetCal){
 function buildPlan(seed = Date.now() % 100000){
   const slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1;
   const calorieGoal=goalOf("calories")?.value||2000,rnd=pseudoRandom(seed);
+  const levels=[0.5,0.75,1,1.25,1.5,1.75,2];
   const options=slots.map(slot=>{
     const targetCal=calorieGoal*(slot.share/totalShare);
     const meals=candidatesFor(slot.id).map(m=>{const mult=bestPortion(m,targetCal);return{row:{slotId:slot.id,mealId:m.id,mult},nutrition:scaled(m,mult)}});
     return meals.length?meals:[{row:{slotId:slot.id,mealId:null,mult:1},nutrition:null}];
   });
-  const totals={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0},counts=new Map(),rows=[];
+  const totals={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0};
+  const counts=new Map(),rows=[],topMenus=[];
   let bestCompliantRows=null,bestFallbackRows=null,bestCompliantScore=Infinity,bestFallbackScore=Infinity;
   function scoreDay(){
     let score=0;
@@ -1253,25 +1255,63 @@ function buildPlan(seed = Date.now() % 100000){
     for(const count of counts.values())score+=Math.max(0,count-1)*.18;
     return score;
   }
-  function search(i){
+  function searchMealChoices(i){
     if(i===options.length){
       const compliant=goalsAreMet(totals),violation=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
-      if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=rows.map(row=>({...row}))}
+      const snapshot=rows.map(row=>({...row}));
+      if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=snapshot}
       const fallbackScore=score+violation*100;
-      if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=rows.map(row=>({...row}))}
+      if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=snapshot}
+      topMenus.push({rows:snapshot,score:fallbackScore});
+      topMenus.sort((a,b)=>a.score-b.score);
+      if(topMenus.length>12)topMenus.pop();
       return;
     }
     for(const option of options[i]){
       rows.push(option.row);
       if(option.nutrition){for(const key in totals)totals[key]+=option.nutrition[key];counts.set(option.row.mealId,(counts.get(option.row.mealId)||0)+1)}
-      search(i+1);
+      searchMealChoices(i+1);
       if(option.nutrition){for(const key in totals)totals[key]-=option.nutrition[key];const count=counts.get(option.row.mealId)-1;if(count)counts.set(option.row.mealId,count);else counts.delete(option.row.mealId)}
       rows.pop();
     }
   }
-  search(0);
+  searchMealChoices(0);
+
+  let checkedServingAlternatives=0;
+  if(!bestCompliantRows){
+    for(const menu of topMenus){
+      counts.clear();
+      for(const row of menu.rows)if(row.mealId)counts.set(row.mealId,(counts.get(row.mealId)||0)+1);
+      const portionRows=[];
+      function searchPortions(i){
+        if(i===menu.rows.length){
+          checkedServingAlternatives++;
+          const compliant=goalsAreMet(totals),violation=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
+          if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=portionRows.map(row=>({...row}))}
+          const fallbackScore=score+violation*100;
+          if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=portionRows.map(row=>({...row}))}
+          return;
+        }
+        const base=menu.rows[i],m=mealById(base.mealId);
+        if(!m){portionRows.push({...base});searchPortions(i+1);portionRows.pop();return}
+        for(const mult of levels){
+          const nutrition=scaled(m,mult);
+          portionRows.push({...base,mult});
+          for(const key in totals)totals[key]+=nutrition[key];
+          searchPortions(i+1);
+          for(const key in totals)totals[key]-=nutrition[key];
+          portionRows.pop();
+        }
+      }
+      searchPortions(0);
+    }
+  }
   const selectedRows=bestCompliantRows||bestFallbackRows||[];
-  return{seed,rows:selectedRows,compliant:Boolean(bestCompliantRows),checkedAllCombinations:true,builtAt:Date.now()};
+  return{
+    seed,rows:selectedRows,compliant:Boolean(bestCompliantRows),
+    checkedAllMealChoicesAtSuggestedPortions:true,checkedServingAlternatives,
+    builtAt:Date.now(),
+  };
 }
 
 function filterSignature(){
@@ -1721,9 +1761,9 @@ function renderPlanCompliance(totals){
     return;
   }
   host.className="plan-compliance is-warning";
-  const detail=state.plan?.checkedAllCombinations
-    ?"No fully compliant combination was found among the available meals at their suggested portions."
-    :"This plan currently does not meet every active setting.";
+  const detail=state.plan?.checkedAllMealChoicesAtSuggestedPortions
+    ? "All available meals were checked at their suggested portions, then the closest options were checked at alternate serving sizes."
+    : "This plan currently does not meet every active setting.";
   host.innerHTML=`<strong>Exact match not available</strong><p>${detail} The remaining gaps are:</p><ul>${issues.map(issue=>`<li>${escapeHtml(issue.text)}</li>`).join("")}</ul>`;
 }
 function renderPlan(){
