@@ -1236,7 +1236,7 @@ function bestPortion(m, targetCal){
 function buildPlan(seed = Date.now() % 100000){
   const slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1;
   const calorieGoal=goalOf("calories")?.value||2000,rnd=pseudoRandom(seed);
-  const levels=[0.5,0.75,1,1.25,1.5,1.75,2];
+  const portionOffsets=[-0.5,-0.25,0,0.25,0.5];
   const options=slots.map(slot=>{
     const targetCal=calorieGoal*(slot.share/totalShare);
     const meals=candidatesFor(slot.id).map(m=>{const mult=bestPortion(m,targetCal);return{row:{slotId:slot.id,mealId:m.id,mult},nutrition:scaled(m,mult)}});
@@ -1244,10 +1244,11 @@ function buildPlan(seed = Date.now() % 100000){
   });
   const totals={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0};
   const counts=new Map(),rows=[],topMenus=[];
+  const scoreKeys=[["calories","cal"],["protein","protein"],["carbs","carbs"],["fat","fat"],["fiber","fiber"],["sugar","sugar"],["sodium","sodium"]];
   let bestCompliantRows=null,bestFallbackRows=null,bestCompliantScore=Infinity,bestFallbackScore=Infinity;
   function scoreDay(){
     let score=0;
-    for(const [key,totalKey] of [["calories","cal"],["protein","protein"],["carbs","carbs"],["fat","fat"],["fiber","fiber"],["sugar","sugar"],["sodium","sodium"]]){
+    for(const [key,totalKey] of scoreKeys){
       const goal=goalOf(key);if(!goal||goal.value<=0)continue;
       const ratio=totals[totalKey]/goal.value;
       score+=goal.mode==="limit"?ratio*.08:Math.abs(1-ratio)*(key==="calories"?.75:.45);
@@ -1262,9 +1263,13 @@ function buildPlan(seed = Date.now() % 100000){
       if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=snapshot}
       const fallbackScore=score+violation*100;
       if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=snapshot}
-      topMenus.push({rows:snapshot,score:fallbackScore});
-      topMenus.sort((a,b)=>a.score-b.score);
-      if(topMenus.length>12)topMenus.pop();
+      if(topMenus.length<12){
+        topMenus.push({rows:snapshot,score:fallbackScore});
+        topMenus.sort((a,b)=>a.score-b.score);
+      }else if(fallbackScore<topMenus[topMenus.length-1].score){
+        topMenus[topMenus.length-1]={rows:snapshot,score:fallbackScore};
+        topMenus.sort((a,b)=>a.score-b.score);
+      }
       return;
     }
     for(const option of options[i]){
@@ -1294,6 +1299,9 @@ function buildPlan(seed = Date.now() % 100000){
         }
         const base=menu.rows[i],m=mealById(base.mealId);
         if(!m){portionRows.push({...base});searchPortions(i+1);portionRows.pop();return}
+        const slot=SLOTS.find(item=>item.id===base.slotId);
+        const center=bestPortion(m,calorieGoal*(slot.share/totalShare));
+        const levels=portionOffsets.map(delta=>clamp(center+delta,0.5,2)).filter((value,index,all)=>all.indexOf(value)===index);
         for(const mult of levels){
           const nutrition=scaled(m,mult);
           portionRows.push({...base,mult});
@@ -1365,18 +1373,23 @@ function unmetGoals(totals){
   return unmet;
 }
 function goalsGapScore(totals){
-  return unmetGoals(totals).reduce((sum,issue)=>{
-    const goal=goalOf(issue.key),actual=totals[issue.key==="calories"?"cal":issue.key];
-    return sum+Math.abs(actual-goal.value)/Math.max(goal.value,1);
-  },0);
+  let score=0;
+  for(const n of NUTRIENTS){
+    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
+    const actual=totals[n.key==="calories"?"cal":n.key];
+    if(goal.mode==="reach"&&actual<goal.value)score+=(goal.value-actual)/goal.value;
+    else if(goal.mode==="limit"&&actual>goal.value)score+=(actual-goal.value)/goal.value;
+  }
+  return score;
 }
 function goalsAreMet(totals){
-  return NUTRIENTS.every(n=>{
-    const goal=goalOf(n.key);
-    if(!goal||goal.value<=0)return true;
+  for(const n of NUTRIENTS){
+    const goal=goalOf(n.key);if(!goal||goal.value<=0)continue;
     const actual=totals[n.key==="calories"?"cal":n.key];
-    return goal.mode==="limit"?actual<=goal.value+1e-6:actual+1e-6>=goal.value;
-  });
+    if(goal.mode==="limit"&&actual>goal.value+1e-6)return false;
+    if(goal.mode==="reach"&&actual+1e-6<goal.value)return false;
+  }
+  return true;
 }
 </script>
 <script>
