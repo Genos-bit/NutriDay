@@ -886,7 +886,7 @@ function renderRows(plan,totals){
     const tags=m.allergens.map(a=>'<span class="tag tag-alert">'+escapeHtml(a)+'</span>').join("");
     const disabled=plan.sig!==signature()?"disabled":"";
     return '<tr><td class="time">'+slot.time+'<br>'+slot.label+'</td>'
-      +'<td><div class="meal-title">'+m.emoji+' '+escapeHtml(m.name)+'</div><div class="meal-sub">'+ingredients+'</div><div class="meal-tags">'+tags+'</div></td>'
+      +'<td><div class="meal-title">'+escapeHtml(m.name)+'</div><div class="meal-sub">'+ingredients+'</div><div class="meal-tags">'+tags+'</div></td>'
       +'<td><div class="portion"><button type="button" data-step="-1" data-slot="'+slot.id+'" aria-label="Reduce portion" '+(row.mult<=.5||disabled?"disabled":"")+'>−</button><output>'+Math.round(row.mult*100)+'%</output><button type="button" data-step="1" data-slot="'+slot.id+'" aria-label="Increase portion" '+(row.mult>=2||disabled?"disabled":"")+'>+</button></div></td>'
       +'<td class="num">'+format(nutrients.cal,"kcal")+'</td><td class="num">'+format(nutrients.protein,"g")+' g</td><td class="num">'+format(nutrients.carbs,"g")+' g</td><td class="num">'+format(nutrients.fat,"g")+' g</td>'
       +'<td><button type="button" class="swap" data-swap="'+slot.id+'" '+disabled+'>Swap</button></td></tr>'
