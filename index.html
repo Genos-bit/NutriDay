@@ -304,6 +304,13 @@ input[type=number]{font-variant-numeric:tabular-nums}
 .macro .m-fill.near{background:var(--gold)}
 .macro .m-fill.over{background:var(--over)}
 .macro .m-fill.under{background:#c9bb9f}
+.plan-compliance{border:1px solid var(--line);border-radius:16px;padding:15px 18px;background:var(--card);box-shadow:var(--shadow-sm);margin-bottom:18px}
+.plan-compliance strong{display:block;font-size:.94rem;margin-bottom:4px}
+.plan-compliance p{font-size:.84rem;color:var(--ink-soft)}
+.plan-compliance.is-success{border-color:#cddbbd;background:#f5f8ef}
+.plan-compliance.is-warning{border-color:#e8c8a4;background:#fff8ed}
+.plan-compliance ul{margin:8px 0 0;padding-left:22px;font-size:.82rem;color:var(--ink-soft)}
+.plan-compliance li+li{margin-top:2px}
 
 /* ---------- plan table ---------- */
 .plan-card{padding:0; overflow:hidden}
@@ -636,6 +643,8 @@ dialog.detail-dialog::backdrop{animation:fadeIn .3s var(--ease)}
         </div>
       </div>
 
+      <div id="planCompliance" class="plan-compliance" role="status" aria-live="polite"></div>
+
       <div class="card plan-card">
         <div class="plan-card-head">
           <div class="card-head" style="margin-bottom:14px">
@@ -674,7 +683,7 @@ dialog.detail-dialog::backdrop{animation:fadeIn .3s var(--ease)}
           <span class="spacer"></span>
           <button class="btn btn-sm" type="button" id="resetPlan">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-            Reset portions
+            Rebuild plan
           </button>
           <button class="btn btn-sm" type="button" id="printPlan">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>
@@ -1225,71 +1234,44 @@ function bestPortion(m, targetCal){
 }
 
 function buildPlan(seed = Date.now() % 100000){
-  const slots = enabledSlots();
-  const totalShare = slots.reduce((a, s) => a + s.share, 0) || 1;
-  const calorieGoal = goalOf("calories")?.value || 2000;
-  const rnd = pseudoRandom(seed);
-  const options = slots.map(slot => {
-    const targetCal = calorieGoal * (slot.share / totalShare);
-    const meals = candidatesFor(slot.id).map(m => {
-      const mult = bestPortion(m, targetCal);
-      return { row:{ slotId:slot.id, mealId:m.id, mult }, nutrition:scaled(m, mult) };
-    });
-    return meals.length ? meals : [{ row:{ slotId:slot.id, mealId:null, mult:1 }, nutrition:null }];
+  const slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1;
+  const calorieGoal=goalOf("calories")?.value||2000,rnd=pseudoRandom(seed);
+  const options=slots.map(slot=>{
+    const targetCal=calorieGoal*(slot.share/totalShare);
+    const meals=candidatesFor(slot.id).map(m=>{const mult=bestPortion(m,targetCal);return{row:{slotId:slot.id,mealId:m.id,mult},nutrition:scaled(m,mult)}});
+    return meals.length?meals:[{row:{slotId:slot.id,mealId:null,mult:1},nutrition:null}];
   });
-  const totals = { cal:0, protein:0, carbs:0, fat:0, fiber:0, sugar:0, sodium:0 };
-  const counts = new Map();
-  const rows = [];
-  let bestRows = null;
-  let bestScore = Infinity;
-
+  const totals={cal:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0},counts=new Map(),rows=[];
+  let bestCompliantRows=null,bestFallbackRows=null,bestCompliantScore=Infinity,bestFallbackScore=Infinity;
   function scoreDay(){
-    let score = 0;
-    for (const [key, totalKey] of [
-      ["calories","cal"], ["protein","protein"], ["carbs","carbs"],
-      ["fat","fat"], ["fiber","fiber"], ["sugar","sugar"], ["sodium","sodium"],
-    ]){
-      const goal = goalOf(key);
-      if (!goal || goal.value <= 0) continue;
-      const ratio = totals[totalKey] / goal.value;
-      if (goal.mode === "limit"){
-        score += Math.max(0, ratio - 0.9) * 4;
-      } else {
-        score += Math.abs(1 - ratio) * (key === "calories" ? 0.75 : 0.45);
-      }
+    let score=0;
+    for(const [key,totalKey] of [["calories","cal"],["protein","protein"],["carbs","carbs"],["fat","fat"],["fiber","fiber"],["sugar","sugar"],["sodium","sodium"]]){
+      const goal=goalOf(key);if(!goal||goal.value<=0)continue;
+      const ratio=totals[totalKey]/goal.value;
+      score+=goal.mode==="limit"?ratio*.08:Math.abs(1-ratio)*(key==="calories"?.75:.45);
     }
-    for (const count of counts.values()) score += Math.max(0, count - 1) * 0.18;
+    for(const count of counts.values())score+=Math.max(0,count-1)*.18;
     return score;
   }
-
-  function search(slotIndex){
-    if (slotIndex === options.length){
-      const score = scoreDay() + rnd() * 0.00001;
-      if (score < bestScore){
-        bestScore = score;
-        bestRows = rows.map(row => ({ ...row }));
-      }
+  function search(i){
+    if(i===options.length){
+      const compliant=goalsAreMet(totals),violation=goalsGapScore(totals),score=scoreDay()+rnd()*.00001;
+      if(compliant&&score<bestCompliantScore){bestCompliantScore=score;bestCompliantRows=rows.map(row=>({...row}))}
+      const fallbackScore=score+violation*100;
+      if(fallbackScore<bestFallbackScore){bestFallbackScore=fallbackScore;bestFallbackRows=rows.map(row=>({...row}))}
       return;
     }
-    for (const option of options[slotIndex]){
+    for(const option of options[i]){
       rows.push(option.row);
-      if (option.nutrition){
-        for (const key in totals) totals[key] += option.nutrition[key];
-        counts.set(option.row.mealId, (counts.get(option.row.mealId) || 0) + 1);
-      }
-      search(slotIndex + 1);
-      if (option.nutrition){
-        for (const key in totals) totals[key] -= option.nutrition[key];
-        const count = counts.get(option.row.mealId) - 1;
-        if (count) counts.set(option.row.mealId, count);
-        else counts.delete(option.row.mealId);
-      }
+      if(option.nutrition){for(const key in totals)totals[key]+=option.nutrition[key];counts.set(option.row.mealId,(counts.get(option.row.mealId)||0)+1)}
+      search(i+1);
+      if(option.nutrition){for(const key in totals)totals[key]-=option.nutrition[key];const count=counts.get(option.row.mealId)-1;if(count)counts.set(option.row.mealId,count);else counts.delete(option.row.mealId)}
       rows.pop();
     }
   }
-
   search(0);
-  return { seed, rows:bestRows || [], builtAt:Date.now() };
+  const selectedRows=bestCompliantRows||bestFallbackRows||[];
+  return{seed,rows:selectedRows,compliant:Boolean(bestCompliantRows),checkedAllCombinations:true,builtAt:Date.now()};
 }
 
 function filterSignature(){
@@ -1298,6 +1280,7 @@ function filterSignature(){
     avoids:state.avoids.map(normalise).sort(),
     slots:SLOTS.filter(s => state.slots[s.id]).map(s => s.id),
     goals:Object.fromEntries(Object.entries(state.goals).map(([key, goal]) => [key, { on:goal.on, value:goal.value, mode:goal.mode }])),
+    plannerVersion:4,
   });
 }
 
@@ -1319,16 +1302,41 @@ function ensurePlan(){
 
 function mealById(id){ return MEALS.find(m => m.id === id) || null; }
 
-function planTotals(){
-  const plan = ensurePlan();
+function totalsForRows(rows){
   const totals = { cal:0, protein:0, carbs:0, fat:0, fiber:0, sugar:0, sodium:0 };
-  for (const r of plan.rows){
+  for (const r of rows){
     const m = mealById(r.mealId);
     if (!m) continue;
     const s = scaled(m, r.mult);
     for (const k in totals) totals[k] += s[k];
   }
   return totals;
+}
+function planTotals(){ return totalsForRows(ensurePlan().rows); }
+function unmetGoals(totals){
+  const unmet=[];
+  for (const n of NUTRIENTS){
+    const goal=goalOf(n.key);
+    if(!goal||goal.value<=0)continue;
+    const actual=totals[n.key==="calories"?"cal":n.key];
+    if(goal.mode==="reach"&&actual+1e-6<goal.value)unmet.push({key:n.key,text:`${n.label}: ${Math.ceil(goal.value-actual)} ${n.unit} below target`});
+    else if(goal.mode==="limit"&&actual-1e-6>goal.value)unmet.push({key:n.key,text:`${n.label}: ${Math.ceil(actual-goal.value)} ${n.unit} over limit`});
+  }
+  return unmet;
+}
+function goalsGapScore(totals){
+  return unmetGoals(totals).reduce((sum,issue)=>{
+    const goal=goalOf(issue.key),actual=totals[issue.key==="calories"?"cal":issue.key];
+    return sum+Math.abs(actual-goal.value)/Math.max(goal.value,1);
+  },0);
+}
+function goalsAreMet(totals){
+  return NUTRIENTS.every(n=>{
+    const goal=goalOf(n.key);
+    if(!goal||goal.value<=0)return true;
+    const actual=totals[n.key==="calories"?"cal":n.key];
+    return goal.mode==="limit"?actual<=goal.value+1e-6:actual+1e-6>=goal.value;
+  });
 }
 </script>
 <script>
@@ -1704,8 +1712,23 @@ function renderLimitMeters(totals){
   }).join("");
 }
 
+function renderPlanCompliance(totals){
+  const host=$("#planCompliance");if(!host)return;
+  const issues=unmetGoals(totals);
+  if(!issues.length){
+    host.className="plan-compliance is-success";
+    host.innerHTML="<strong>All selected goals and limits are met.</strong><p>This plan satisfies every active setting with its current portions.</p>";
+    return;
+  }
+  host.className="plan-compliance is-warning";
+  const detail=state.plan?.checkedAllCombinations
+    ?"No fully compliant combination was found among the available meals at their suggested portions."
+    :"This plan currently does not meet every active setting.";
+  host.innerHTML=`<strong>Exact match not available</strong><p>${detail} The remaining gaps are:</p><ul>${issues.map(issue=>`<li>${escapeHtml(issue.text)}</li>`).join("")}</ul>`;
+}
 function renderPlan(){
   const totals = planTotals();
+  renderPlanCompliance(totals);
   const dateEl = $("#planDate");
   if (dateEl){
     dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
@@ -1826,51 +1849,41 @@ function closeDialog(){
    Swap + portion
    ============================================================ */
 function swapRow(slotId){
-  const plan = ensurePlan();
-  const row = plan.rows.find(r => r.slotId === slotId);
-  if (!row) return;
-  const current = mealById(row.mealId);
-  const pool = candidatesFor(slotId);
-  if (pool.length < 2 && !current){
-    toast("No alternative fits your current filters.", "info");
-    return;
-  }
-  const alt = pool.filter(m => m.id !== row.mealId);
-  if (!alt.length){
-    toast("That’s the only option that fits — try loosening a filter.", "info");
-    return;
-  }
-  const calGoal = goalOf("calories")?.value || 2000;
-  const slots = enabledSlots();
-  const totalShare = slots.reduce((a, s) => a + s.share, 0);
-  const slot = SLOTS.find(s => s.id === slotId);
-  const target = calGoal * (slot.share / totalShare);
-  alt.sort((a, b) => scoreMeal(a, target, slot) - scoreMeal(b, target, slot));
-  const next = alt[Math.floor(Math.random() * Math.min(alt.length, 3))];
-  row.mealId = next.id;
-  row.mult = bestPortion(next, target);
-
-  const tr = document.querySelector(`tr[data-row="${slotId}"]`);
-  if (tr){
-    tr.classList.remove("row-swap");
-    void tr.offsetWidth;
-    tr.classList.add("row-swap");
-  }
-  if (dlg.open) closeDialog();
-  renderPlan();
-  queueSave();
-  toast(`Swapped in ${next.name}`, "swap");
+  const plan=ensurePlan(),row=plan.rows.find(r=>r.slotId===slotId);
+  if(!row)return;
+  const alt=candidatesFor(slotId).filter(m=>m.id!==row.mealId);
+  if(!alt.length){toast("That’s the only option that fits your current filters.","info");return}
+  const calGoal=goalOf("calories")?.value||2000,slots=enabledSlots(),totalShare=slots.reduce((a,s)=>a+s.share,0)||1,slot=SLOTS.find(s=>s.id===slotId),target=calGoal*(slot.share/totalShare);
+  const before=totalsForRows(plan.rows),wasCompliant=goalsAreMet(before),beforeGap=goalsGapScore(before);
+  const choices=alt.map(meal=>{
+    const previous={mealId:row.mealId,mult:row.mult};
+    row.mealId=meal.id;row.mult=bestPortion(meal,target);
+    const totals=totalsForRows(plan.rows),choice={meal,mult:row.mult,compliant:goalsAreMet(totals),gap:goalsGapScore(totals),fit:scoreMeal(meal,target,slot)};
+    row.mealId=previous.mealId;row.mult=previous.mult;return choice;
+  }).sort((a,b)=>{
+    if(wasCompliant&&a.compliant!==b.compliant)return a.compliant?-1:1;
+    return a.gap-b.gap||a.fit-b.fit;
+  });
+  const next=choices.find(choice=>wasCompliant?choice.compliant:choice.gap<beforeGap-1e-8);
+  if(!next){toast("No swap can keep or move this plan closer to every goal.","info");return}
+  row.mealId=next.meal.id;row.mult=next.mult;plan.compliant=next.compliant;
+  const tr=document.querySelector(`tr[data-row="${slotId}"]`);
+  if(tr){tr.classList.remove("row-swap");void tr.offsetWidth;tr.classList.add("row-swap")}
+  if(dlg.open)closeDialog();renderPlan();queueSave();toast(`Swapped in ${next.meal.name}`,"swap");
 }
 
 function stepPortion(slotId, dir){
-  const plan = ensurePlan();
-  const row = plan.rows.find(r => r.slotId === slotId);
-  if (!row) return;
-  row.mult = clamp(Math.round((row.mult + dir * 0.25) * 4) / 4, 0.25, 3);
-  renderPlan();
-  /* keep the detail dialog in sync so portions can be nudged while reading */
-  if (dlg.open) refreshDialogPortion(slotId);
-  queueSave();
+  const plan=ensurePlan(),row=plan.rows.find(r=>r.slotId===slotId);
+  if(!row)return;
+  const previous=row.mult,before=totalsForRows(plan.rows);
+  row.mult=clamp(Math.round((row.mult+dir*.25)*4)/4,.25,3);
+  if(row.mult===previous)return;
+  const after=totalsForRows(plan.rows);
+  if((goalsAreMet(before)&&!goalsAreMet(after))||(!goalsAreMet(before)&&goalsGapScore(after)>=goalsGapScore(before)-1e-8)){
+    row.mult=previous;toast("That portion would move the plan farther from your goals.","info");return;
+  }
+  plan.compliant=goalsAreMet(after);
+  renderPlan();if(dlg.open)refreshDialogPortion(slotId);queueSave();
 }
 
 function refreshDialogPortion(slotId){
@@ -2032,19 +2045,12 @@ function bind(){
   });
 
   $("#resetPlan").addEventListener("click", () => {
-    const plan = ensurePlan();
-    plan.rows.forEach(r => {
-      const m = mealById(r.mealId);
-      if (!m) return;
-      const calGoal = goalOf("calories")?.value || 2000;
-      const slots = enabledSlots();
-      const totalShare = slots.reduce((a, s) => a + s.share, 0);
-      const slot = SLOTS.find(s => s.id === r.slotId);
-      r.mult = bestPortion(m, calGoal * (slot.share / totalShare));
-    });
+    state.seed += 1;
+    state.plan = buildPlan(state.seed);
+    state.plan.sig = filterSignature();
     save();
     renderPlan();
-    toast("Portions reset to suggested sizes", "check");
+    toast("Plan rebuilt against your goals", state.plan.compliant ? "check" : "info");
   });
 
   $("#printPlan").addEventListener("click", () => window.print());
